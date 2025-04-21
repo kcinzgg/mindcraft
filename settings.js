@@ -1,5 +1,5 @@
 const settings = {
-    "minecraft_version": "1.21.1", // supports up to 1.21.1
+    "minecraft_version": "1.20.4", // supports up to 1.21.1
     "host": "127.0.0.1", // or "localhost", "your.ip.address.here"
     "port": 55916,
     "auth": "offline", // or "microsoft"
@@ -13,6 +13,7 @@ const settings = {
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json
     "profiles": [
         "./andy.json",
+        "./jack.json",
         // "./profiles/gpt.json",
         // "./profiles/claude.json",
         // "./profiles/gemini.json",
@@ -28,7 +29,7 @@ const settings = {
     "load_memory": false, // load memory from previous session
     "init_message": "Respond with hello world and your name", // sends to all on spawn
     "only_chat_with": [], // users that the bots listen to and send general messages to. if empty it will chat publicly
-    "speak": false, // allows all bots to speak through system text-to-speech. works on windows, mac, on linux you need to `apt install espeak`
+    "speak": true, // allows all bots to speak through system text-to-speech. works on windows, mac, on linux you need to `apt install espeak`
     "language": "en", // translate to/from this language. Supports these language names: https://cloud.google.com/translate/docs/languages
     "show_bot_views": false, // show bot's view in browser at localhost:3000, 3001...
 

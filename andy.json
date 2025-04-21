@@ -1,6 +1,17 @@
 {
     "name": "andy",
 
-    "model": "gpt-4o-mini"
+    "cooldown": 5000,
 
+    "model": {
+        "api": "qwen",
+        "url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model": "qwen-plus-latest"
+    },
+
+    "embedding": {
+        "api": "qwen",
+        "url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model": "text-embedding-v3"
+    }
 }
