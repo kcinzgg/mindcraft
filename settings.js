@@ -13,7 +13,7 @@ const settings = {
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json
     "profiles": [
         "./andy.json",
-        "./jack.json",
+        // "./jack.json",
         // "./profiles/gpt.json",
         // "./profiles/claude.json",
         // "./profiles/gemini.json",
@@ -27,7 +27,7 @@ const settings = {
         // individual profiles override values from the base profile
     ],
     "load_memory": false, // load memory from previous session
-    "init_message": "Respond with hello world and your name", // sends to all on spawn
+    "init_message": "Respond with hello world and your name in chinese and always use chinese", // sends to all on spawn
     "only_chat_with": [], // users that the bots listen to and send general messages to. if empty it will chat publicly
     "speak": true, // allows all bots to speak through system text-to-speech. works on windows, mac, on linux you need to `apt install espeak`
     "language": "en", // translate to/from this language. Supports these language names: https://cloud.google.com/translate/docs/languages
