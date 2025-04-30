@@ -2,7 +2,7 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-30 18:05:16
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-04-30 19:02:17
+ * @LastEditTime: 2025-04-30 19:27:08
  * @FilePath: /mindcraft/src/utils/asr_service.js
  * @Description: 豆包ASR语音识别服务
  */
@@ -45,6 +45,14 @@ const JSON_SERIALIZATION = 0x01;
 const NO_COMPRESSION = 0x00;
 const GZIP_COMPRESSION = 0x01;
 
+// VAD 参数
+const VAD_MODE = {
+    OFF: 0,           // 不使用VAD
+    MANUAL: 1,        // 手动启停（热键）
+    AUTO: 2,          // 自动启停（静音检测）
+    CONTINUOUS: 3     // 持续录音
+};
+
 export class ASRService {
     constructor() {
         this.isListening = false;
@@ -66,6 +74,20 @@ export class ASRService {
         
         // ASR结果回调
         this.onResult = null;
+        
+        // VAD设置
+        this.vadMode = settings.asr_vad_mode || VAD_MODE.MANUAL;
+        this.vadSilenceTimeout = settings.asr_silence_timeout || 2000; // 2秒静音超时
+        this.vadThreshold = settings.asr_vad_threshold || 0.01; // 音量阈值
+        this.vadSilenceStart = 0;
+        this.isVoiceActive = false;
+        this.vadAudioBuffer = [];
+        this.vadBatchSize = 4; // 累积多少帧音频后再做VAD检测
+        this.vadInProgress = false;
+        
+        // VAD缓冲
+        this.audioDataBuffer = [];
+        this.maxBufferLength = 100; // 最多缓存100帧，防止内存溢出
     }
     
     generateRequestId() {
@@ -87,10 +109,168 @@ export class ASRService {
         // 初始化按键监听
         this.initKeyboardEvents();
         
+        // 如果启用了自动VAD模式，直接开始监听
+        if (this.vadMode === VAD_MODE.AUTO || this.vadMode === VAD_MODE.CONTINUOUS) {
+            this.startAudioMonitoring();
+        }
+        
         return true;
     }
     
+    startAudioMonitoring() {
+        console.log("启动音频监控...");
+        // 启动麦克风但不发送到ASR
+        this.setupMicrophone();
+        this.micInstance.start();
+    }
+    
+    setupMicrophone() {
+        try {
+            // 麦克风配置
+            this.micInstance = this.mic({
+                rate: '16000',
+                channels: '1',
+                debug: false,
+                fileType: 'raw',
+                exitOnSilence: 0,
+                device: 'default'
+            });
+            
+            this.micInputStream = this.micInstance.getAudioStream();
+            
+            // 处理音频数据
+            this.micInputStream.on('data', (data) => {
+                try {
+                    // 根据VAD模式处理音频
+                    if (this.vadMode === VAD_MODE.AUTO) {
+                        this.processAudioWithVAD(data);
+                    } else if (this.vadMode === VAD_MODE.CONTINUOUS) {
+                        this.processAudioContinuous(data);
+                    } else if (this.isListening && this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                        this.sendAudioData(data, false);
+                    } else if (this.websocket) {
+                        console.log(`WebSocket未就绪，状态: ${this.websocket.readyState}`);
+                    }
+                } catch (error) {
+                    console.error("处理音频数据出错:", error);
+                }
+            });
+            
+            // 处理错误
+            this.micInputStream.on('error', (err) => {
+                console.error('麦克风错误:', err);
+                this.isListening = false;
+            });
+        } catch (error) {
+            console.error('设置麦克风失败:', error);
+        }
+    }
+    
+    // 使用VAD处理音频
+    processAudioWithVAD(audioData) {
+        // 将音频添加到缓冲区
+        this.vadAudioBuffer.push(audioData);
+        
+        // 达到检测批次大小后进行处理
+        if (this.vadAudioBuffer.length >= this.vadBatchSize && !this.vadInProgress) {
+            this.vadInProgress = true;
+            
+            try {
+                // 合并音频数据
+                const combinedBuffer = Buffer.concat(this.vadAudioBuffer);
+                this.vadAudioBuffer = [];
+                
+                // 计算音量
+                const volume = this.calculateVolume(combinedBuffer);
+                
+                // 当前时间
+                const now = Date.now();
+                
+                // 有声音活动
+                if (volume > this.vadThreshold) {
+                    // 如果之前没有在录音，则开始录音
+                    if (!this.isListening) {
+                        console.log(`检测到语音活动 (音量: ${volume.toFixed(4)}), 开始录音...`);
+                        this.startListening();
+                    }
+                    
+                    // 重置静音计时器
+                    this.vadSilenceStart = 0;
+                    
+                    // 发送音频
+                    if (this.isListening && this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                        this.sendAudioData(combinedBuffer, false);
+                    }
+                } else {
+                    // 静音
+                    if (this.isListening) {
+                        // 如果这是静音的开始
+                        if (this.vadSilenceStart === 0) {
+                            this.vadSilenceStart = now;
+                        }
+                        
+                        // 如果仍在录音，需要发送静音数据
+                        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                            this.sendAudioData(combinedBuffer, false);
+                        }
+                        
+                        // 检查是否超过静音超时
+                        if (this.vadSilenceStart > 0 && now - this.vadSilenceStart > this.vadSilenceTimeout) {
+                            console.log(`检测到静音超过 ${this.vadSilenceTimeout/1000}秒, 停止录音...`);
+                            this.stopListening();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("VAD处理出错:", error);
+            }
+            
+            this.vadInProgress = false;
+        }
+    }
+    
+    // 持续处理音频
+    processAudioContinuous(audioData) {
+        // 在连续模式中，我们始终保持录音状态
+        if (!this.isListening) {
+            this.startListening();
+        }
+        
+        // 发送音频数据
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            this.sendAudioData(audioData, false);
+        }
+    }
+    
+    // 计算音频缓冲区的音量
+    calculateVolume(buffer) {
+        if (!buffer || buffer.length === 0) return 0;
+        
+        try {
+            // 音频格式是16位PCM
+            const samples = new Int16Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 2);
+            
+            // 计算平均能量
+            let sum = 0;
+            for (let i = 0; i < samples.length; i++) {
+                sum += Math.abs(samples[i]);
+            }
+            
+            // 归一化音量（0-1范围）
+            return sum / (samples.length * 32768);
+        } catch (error) {
+            console.error("计算音量出错:", error);
+            return 0;
+        }
+    }
+    
     initKeyboardEvents() {
+        // 如果使用的是自动VAD模式，不需要键盘控制
+        if (this.vadMode === VAD_MODE.AUTO || this.vadMode === VAD_MODE.CONTINUOUS) {
+            console.log(`使用${this.vadMode === VAD_MODE.AUTO ? '自动语音检测' : '持续录音'}模式，无需键盘控制`);
+            return;
+        }
+        
         // 如果全局按键监听器可用，则使用它
         if (globalKeyListenerAvailable) {
             try {
@@ -171,40 +351,12 @@ export class ASRService {
             // 先建立WebSocket连接
             this.setupWebSocket();
             
-            // 麦克风配置
-            this.micInstance = this.mic({
-                rate: '16000',
-                channels: '1',
-                debug: false,
-                fileType: 'raw',
-                exitOnSilence: 0,
-                device: 'default'
-            });
+            // 如果不是自动VAD模式，需要创建麦克风实例
+            if (this.vadMode !== VAD_MODE.AUTO && this.vadMode !== VAD_MODE.CONTINUOUS) {
+                this.setupMicrophone();
+                this.micInstance.start();
+            }
             
-            this.micInputStream = this.micInstance.getAudioStream();
-            
-            // 处理音频数据
-            this.micInputStream.on('data', (data) => {
-                try {
-                    if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-                        this.sendAudioData(data, false);
-                    } else if (this.websocket) {
-                        console.log(`WebSocket未就绪，状态: ${this.websocket.readyState}`);
-                    } else {
-                        console.log("WebSocket连接未初始化");
-                    }
-                } catch (error) {
-                    console.error("处理音频数据出错:", error);
-                }
-            });
-            
-            // 处理错误
-            this.micInputStream.on('error', (err) => {
-                console.error('麦克风错误:', err);
-                this.isListening = false;
-            });
-            
-            this.micInstance.start();
             this.isListening = true;
             console.log("开始录音...");
         } catch (error) {
@@ -216,12 +368,18 @@ export class ASRService {
         if (!this.isListening) return;
         
         try {
-            this.micInstance.stop();
+            // 在自动VAD模式下，我们不停止麦克风，只结束当前的识别会话
+            if (this.vadMode !== VAD_MODE.AUTO && this.vadMode !== VAD_MODE.CONTINUOUS) {
+                this.micInstance.stop();
+            }
             
             // 发送结束标记
             if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
                 this.sendAudioData(Buffer.alloc(0), true);
             }
+            
+            // 重置VAD状态
+            this.vadSilenceStart = 0;
         } catch (error) {
             console.error('停止录音失败:', error);
         }
@@ -237,6 +395,16 @@ export class ASRService {
                 this.stopListening();
             } catch (error) {
                 console.error("停止录音失败:", error);
+            }
+        }
+        
+        // 如果是自动VAD或持续模式，需要特别停止麦克风
+        if ((this.vadMode === VAD_MODE.AUTO || this.vadMode === VAD_MODE.CONTINUOUS) && this.micInstance) {
+            try {
+                this.micInstance.stop();
+                console.log("停止音频监控...");
+            } catch (error) {
+                console.error("停止音频监控失败:", error);
             }
         }
         
@@ -257,6 +425,12 @@ export class ASRService {
                 console.error("停止全局热键监听失败:", error);
             }
         }
+        
+        // 清理其他资源
+        this.vadAudioBuffer = [];
+        this.audioDataBuffer = [];
+        this.websocket = null;
+        this.isListening = false;
     }
     
     setupWebSocket() {
@@ -602,7 +776,7 @@ export class ASRService {
             
             // 如果有消息处理函数，调用它
             if (this.messageHandler && recognizedText.trim()) {
-                this.messageHandler('nick', recognizedText);
+                this.messageHandler(settings.player_name, recognizedText);
             }
         }
     }
