@@ -1,3 +1,11 @@
+/*
+ * @Author: nick nickzj@qq.com
+ * @Date: 2025-04-30 16:59:55
+ * @LastEditors: nick nickzj@qq.com
+ * @LastEditTime: 2025-04-30 18:11:10
+ * @FilePath: /mindcraft/settings.js
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 const settings = {
     "minecraft_version": "1.20.4", // supports up to 1.21.1
     "host": "127.0.0.1", // or "localhost", "your.ip.address.here"
@@ -8,6 +16,18 @@ const settings = {
     "host_mindserver": true, // if true, the mindserver will be hosted on this machine. otherwise, specify a public IP address
     "mindserver_host": "localhost",
     "mindserver_port": 8080,
+
+    // ASR设置
+    "enable_asr": true,          // 是否启用ASR功能
+    "doubao_asr_key": '',        // 豆包ASR API密钥 (Access Key)
+    "doubao_app_id": "9954471235", // 豆包ASR应用ID
+    "doubao_token": "riXplQ9eQMUg1K1GJIqgt_kRSWZU3zW9", // 豆包ASR令牌
+    "asr_language": 'zh',        // 默认识别语言
+    "asr_auto_start": false,     // 是否自动启动ASR
+    "asr_continuous": false,     // 是否连续监听
+    "asr_confidence_threshold": 0.7,  // 识别结果可信度阈值
+    "asr_debug": false,          // 是否启用ASR调试模式
+    "asr_hotkey": "ShiftCmdT",   // 全局热键 (Mac: ShiftCmdT, Windows/Linux: ShiftCtrlT)
     
     // the base profile is shared by all bots for default prompts/examples/modes
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json

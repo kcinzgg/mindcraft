@@ -16,6 +16,7 @@ import settings from '../../settings.js';
 import { serverProxy } from './agent_proxy.js';
 import { Task } from './tasks.js';
 import { say } from './speak.js';
+import { ASRService } from '../utils/asr_service.js';
 
 export class Agent {
     async start(profile_fp, load_mem=false, init_message=null, count_id=0, task_path=null, task_id=null) {
@@ -50,6 +51,24 @@ export class Agent {
         this.task = new Task(this, task_path, task_id);
         const blocked_actions = settings.blocked_actions.concat(this.task.blocked_actions || []);
         blacklistCommands(blocked_actions);
+
+        // 初始化ASR服务（如果启用）
+        if (settings.enable_asr) {
+            console.log('Initializing ASR service...');
+            this.asr = new ASRService();
+            // 传入消息处理函数
+            const asrInitResult = await this.asr.init((username, message) => this.respondFunc(username, message));
+            
+            if (asrInitResult) {
+                console.log('ASR service initialized successfully');
+                // 如果配置了自动启动ASR
+                if (settings.asr_auto_start) {
+                    this.startASR();
+                }
+            } else {
+                console.error('Failed to initialize ASR service');
+            }
+        }
 
         serverProxy.connect(this);
 
@@ -467,10 +486,38 @@ export class Agent {
         this.history.add('system', msg);
         this.bot.chat(code > 1 ? 'Restarting.': 'Exiting.');
         this.history.save();
+        
+        // 清理ASR资源
+        this.cleanupASR();
+        
         process.exit(code);
     }
 
     killAll() {
         serverProxy.shutdown();
+    }
+
+    startASR() {
+        if (this.asr) {
+            console.log('Starting ASR service...');
+            this.asr.startListening();
+            return true;
+        }
+        return false;
+    }
+
+    stopASR() {
+        if (this.asr) {
+            console.log('Stopping ASR service...');
+            this.asr.stopListening();
+            return true;
+        }
+        return false;
+    }
+
+    cleanupASR() {
+        if (this.asr) {
+            this.asr.cleanup();
+        }
     }
 }

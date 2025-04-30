@@ -250,4 +250,39 @@ export const queryList = [
             return getCommandDocs();
         }
     },
+    // ASR控制命令
+    {
+        name: "!startASR",
+        description: "开始语音识别，使用快捷键Cmd+Shift+T(Mac)或Ctrl+Shift+T(Windows/Linux)控制",
+        perform: async function(agent) {
+            const result = agent.startASR();
+            if (result) {
+                return "语音识别已启动。使用快捷键或输入!stopASR停止。";
+            } else {
+                return "无法启动语音识别服务，请检查配置和依赖项。";
+            }
+        }
+    },
+    {
+        name: "!stopASR",
+        description: "停止语音识别",
+        perform: async function(agent) {
+            const result = agent.stopASR();
+            if (result) {
+                return "语音识别已停止。";
+            } else {
+                return "无法停止语音识别服务，请检查ASR是否正在运行。";
+            }
+        }
+    },
+    {
+        name: "!asrStatus",
+        description: "查询语音识别状态",
+        perform: async function(agent) {
+            if (!agent.asr) {
+                return "语音识别服务未初始化。";
+            }
+            return `语音识别状态: ${agent.asr.isListening ? '活跃' : '未活跃'}`;
+        }
+    },
 ];
