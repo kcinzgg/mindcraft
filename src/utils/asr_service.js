@@ -2,7 +2,7 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-30 18:05:16
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-04-30 19:28:44
+ * @LastEditTime: 2025-05-02 14:11:04
  * @FilePath: /mindcraft/src/utils/asr_service.js
  * @Description: 豆包ASR语音识别服务
  */
@@ -53,6 +53,9 @@ const VAD_MODE = {
     CONTINUOUS: 3     // 持续录音
 };
 
+// MacOS下的Ctrl+I键码
+const MAC_CTRL_I_KEY = '09'; // TAB键的十六进制码
+
 export class ASRService {
     constructor() {
         this.isListening = false;
@@ -66,7 +69,7 @@ export class ASRService {
         this.micInstance = null;
         this.micInputStream = null;
         this.websocket = null;
-        this.debug = settings.asr_debug || false;
+        this.debug = process.env.NODE_ENV === 'development' || settings.asr_debug; // 开发环境默认开启调试
         this.requestId = this.generateRequestId();
         this.sentAudioPackets = 0;
         this.globalKeyListener = null;
@@ -88,6 +91,11 @@ export class ASRService {
         // VAD缓冲
         this.audioDataBuffer = [];
         this.maxBufferLength = 100; // 最多缓存100帧，防止内存溢出
+        
+        if (this.debug) {
+            console.log("ASR服务初始化，当前系统:", process.platform);
+            console.log("当前VAD模式:", this.vadMode);
+        }
     }
     
     generateRequestId() {
@@ -279,24 +287,65 @@ export class ASRService {
                     console.log("注意: 在macOS上，全局按键监听需要特殊权限。");
                     console.log("如果遇到权限问题，请尝试以下步骤:");
                     console.log("1. 手动执行: chmod +x node_modules/node-global-key-listener/bin/MacKeyServer");
+                    console.log("2. 如需查看详细按键调试信息，请使用 --debug 参数启动程序");
                 }
                 
-                this.globalKeyListener = new GlobalKeyboardListener();
+                const gklOptions = {
+                    windows: { 
+                        // Windows默认选项
+                    },
+                    mac: {
+                        // 配置MacOS按键服务器
+                        macKeyServerPath: 'node_modules/node-global-key-listener/bin/MacKeyServer',
+                        debug: this.debug
+                    },
+                    linux: {
+                        // Linux默认选项
+                    }
+                };
                 
-                // 注册 Ctrl+Shift+T / Command+Shift+T 快捷键用于开始/停止录音
+                // 创建全局按键监听器
+                this.globalKeyListener = new GlobalKeyboardListener(gklOptions);
+                
+                if (this.debug) {
+                    console.log("全局按键监听器已创建，系统:", process.platform);
+                }
+                
+                // 注册 Ctrl+I 快捷键用于开始/停止录音
                 this.globalKeyListener.addListener((e, down) => {
-                    const isMac = process.platform === 'darwin';
-                    const metaKey = isMac ? (down["LEFT META"] || down["RIGHT META"]) : (down["LEFT CONTROL"] || down["RIGHT CONTROL"]);
-                    const shiftKey = down["LEFT SHIFT"] || down["RIGHT SHIFT"];
+                    // 列出所有当前按下的键，帮助调试
+                    if (this.debug) {
+                        const pressedKeys = Object.keys(down).filter(key => down[key]);
+                        console.log(`按键事件: ${e.name}, 状态: ${e.state}`);
+                        console.log(`当前按下的键:`, pressedKeys);
+                    }
                     
-                    // 当按下 T 键并同时按下 Command+Shift (Mac) 或 Ctrl+Shift (Windows/Linux)
-                    if (e.state === "DOWN" && e.name === "T" && metaKey && shiftKey) {
-                        console.log(`检测到全局热键: ${isMac ? 'Command' : 'Ctrl'}+Shift+T`);
+                    const isMac = process.platform === 'darwin';
+                    
+                    // 根据系统平台使用不同的修饰键
+                    let modifierKey = false;
+                    if (isMac) {
+                        // MacOS下使用Command键
+                        modifierKey = down["LEFT META"] || down["RIGHT META"];
+                    } else {
+                        // Windows/Linux下使用Ctrl键
+                        modifierKey = down["LEFT CONTROL"] || down["RIGHT CONTROL"];
+                    }
+                    
+                    // 当按下 I 键并同时按下修饰键 (MacOS用Command+I, 其他系统用Ctrl+I)
+                    if (e.name === "I" && modifierKey) {
+                        const modifierName = isMac ? 'Command' : 'Ctrl';
+                        // console.log(`检测到${modifierName}+I ${e.state === "DOWN" ? "按下" : "释放"}`);
                         
-                        if (this.isListening) {
-                            this.stopListening();
-                        } else {
+                        // 按下按键时开始录音
+                        if (e.state === "DOWN" && !this.isListening) {
+                            console.log(`开始录音...`);
                             this.startListening();
+                        } 
+                        // 释放按键时停止录音
+                        else if (e.state === "UP" && this.isListening) {
+                            console.log(`停止录音...`);
+                            this.stopListening();
                         }
                         
                         // 返回true表示拦截此按键，不传递给其他应用
@@ -307,7 +356,8 @@ export class ASRService {
                     return false;
                 });
                 
-                console.log("已启用全局热键监听，按 Cmd+Shift+T (Mac) 或 Ctrl+Shift+T (Windows/Linux) 开始/停止录音");
+                const modifierKey = isMac ? 'Command' : 'Ctrl';
+                console.log(`已启用全局热键监听，按住 ${modifierKey}+I 录音，松开停止录音`);
             } catch (error) {
                 console.error("全局热键监听初始化失败:", error.message);
                 this.initTerminalKeyboardEvents();
@@ -319,25 +369,47 @@ export class ASRService {
     }
     
     initTerminalKeyboardEvents() {
+        const isMac = process.platform === 'darwin';
+        const modifierKey = isMac ? 'Command' : 'Ctrl';
+        
         console.log("\n=== 终端按键模式 ===");
         console.log("使用终端按键绑定，只在终端窗口有焦点时有效");
-        console.log("· 按空格键: 开始/停止语音识别");
+        console.log(`· 由于终端限制，无法完全模拟${modifierKey}+I的按下/释放行为`);
+        console.log(`· 按 ${modifierKey}+I (TAB键): 开始录音`);
+        console.log(`· 按 ${modifierKey}+R: 停止录音`);
         console.log("· 按Ctrl+C: 退出程序");
         console.log("=============================\n");
         
         process.stdin.setRawMode(true);
         process.stdin.resume();
+        
+        let isRecording = false;
+        
         process.stdin.on('data', (key) => {
-            // 按空格键开始/停止录音
-            if (key.toString() === ' ') {
-                if (this.isListening) {
-                    this.stopListening();
-                } else {
+            // 转换为十六进制查看按键码
+            const keyHex = Array.from(key).map(k => k.toString(16).padStart(2, '0')).join('');
+            if (this.debug) {
+                console.log(`按键按下, 十六进制: ${keyHex}`);
+            }
+            
+            // Tab键 (Ctrl+I的终端编码)
+            if (keyHex === '09') {
+                if (!this.isListening) {
+                    console.log(`检测到${modifierKey}+I按下，开始录音...`);
                     this.startListening();
+                    isRecording = true;
+                }
+            } 
+            // Ctrl+R (ASCII 12)
+            else if (keyHex === '12') {
+                if (this.isListening) {
+                    console.log(`检测到${modifierKey}+R按下，停止录音...`);
+                    this.stopListening();
+                    isRecording = false;
                 }
             }
             // 按Ctrl+C退出
-            else if (key.toString() === '\u0003') {
+            else if (keyHex === '03') {
                 this.cleanup();
                 process.exit(0);
             }

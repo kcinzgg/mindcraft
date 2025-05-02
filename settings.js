@@ -2,7 +2,7 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-30 16:59:55
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-04-30 19:26:26
+ * @LastEditTime: 2025-05-02 12:27:18
  * @FilePath: /mindcraft/settings.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -30,7 +30,7 @@ const settings = {
     "asr_hotkey": "ShiftCmdT",   // 全局热键 (Mac: ShiftCmdT, Windows/Linux: ShiftCtrlT)
     
     // VAD设置
-    "asr_vad_mode": 2,           // 0:关闭, 1:手动(热键), 2:自动(语音检测), 3:持续模式
+    "asr_vad_mode": 1,           // 0:关闭, 1:手动(热键), 2:自动(语音检测), 3:持续模式
     "asr_silence_timeout": 2000, // 静音超时(毫秒)，超过此时间无声音则停止录音
     "asr_vad_threshold": 0.01,   // 语音活动检测阈值，值越小越灵敏
     "player_name": "nick",        // 玩家名称
