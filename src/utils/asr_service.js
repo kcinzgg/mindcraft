@@ -291,6 +291,7 @@ export class ASRService {
                 const gklOptions = {
                     windows: { 
                         // Windows默认选项
+                        debug: this.debug
                     },
                     mac: {
                         // 配置MacOS按键服务器
@@ -308,6 +309,8 @@ export class ASRService {
                 if (this.debug) {
                     console.log("全局按键监听器已创建，系统:", process.platform);
                 }
+
+                const isMac = process.platform === 'darwin';
                 
                 // 注册 Ctrl+I 快捷键用于开始/停止录音
                 this.globalKeyListener.addListener((e, down) => {
@@ -318,8 +321,6 @@ export class ASRService {
                         console.log(`当前按下的键:`, pressedKeys);
                     }
                     
-                    const isMac = process.platform === 'darwin';
-                    
                     // 根据系统平台使用不同的修饰键
                     let modifierKey = false;
                     if (isMac) {
@@ -327,7 +328,7 @@ export class ASRService {
                         modifierKey = down["LEFT META"] || down["RIGHT META"];
                     } else {
                         // Windows/Linux下使用Ctrl键
-                        modifierKey = down["LEFT CONTROL"] || down["RIGHT CONTROL"];
+                        modifierKey = down["LEFT CTRL"] || down["RIGHT CTRL"];
                     }
                     
                     // 当按下 I 键并同时按下修饰键 (MacOS用Command+I, 其他系统用Ctrl+I)
