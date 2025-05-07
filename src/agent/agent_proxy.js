@@ -2,7 +2,7 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-05 21:35:59
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-04-30 18:10:13
+ * @LastEditTime: 2025-05-06 19:34:31
  * @FilePath: /mindcraft/src/agent/agent_proxy.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -51,43 +51,18 @@ class AgentServerProxy {
             this.agent.cleanKill();
         });
 		
-		this.socket.on('send-message', (agentName, message) => {
-			try {
-				this.agent.respondFunc("NO USERNAME", message);
-			} catch (error) {
-				console.error('Error: ', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-			}
-		});
-        
-        // 添加ASR控制事件监听
-        this.socket.on('start-asr', () => {
+        this.socket.on('send-message', (agentName, message) => {
             try {
-                const result = this.agent.startASR();
-                this.socket.emit('asr-status', { active: result, message: result ? 'ASR started' : 'Failed to start ASR' });
+                this.agent.respondFunc(settings.player_name, message);
             } catch (error) {
-                console.error('Error starting ASR:', error);
-                this.socket.emit('asr-status', { active: false, message: 'Error starting ASR' });
+                console.error('Error: ', JSON.stringify(error, Object.getOwnPropertyNames(error)));
             }
         });
         
-        this.socket.on('stop-asr', () => {
-            try {
-                const result = this.agent.stopASR();
-                this.socket.emit('asr-status', { active: !result, message: result ? 'ASR stopped' : 'Failed to stop ASR' });
-            } catch (error) {
-                console.error('Error stopping ASR:', error);
-                this.socket.emit('asr-status', { active: true, message: 'Error stopping ASR' });
-            }
-        });
-        
-        this.socket.on('get-asr-status', () => {
-            try {
-                const isActive = this.agent.asr && this.agent.asr.isListening;
-                this.socket.emit('asr-status', { active: isActive, message: isActive ? 'ASR is active' : 'ASR is inactive' });
-            } catch (error) {
-                console.error('Error getting ASR status:', error);
-                this.socket.emit('asr-status', { active: false, message: 'Error getting ASR status' });
-            }
+        // MindServer现在已经集成了ASR服务，
+        // 接收ASR状态更新事件
+        this.socket.on('asr-status-change', (status) => {
+            console.log(`收到ASR状态更新: ${status.active ? '已激活' : '已停止'}`);
         });
     }
 
@@ -103,30 +78,45 @@ class AgentServerProxy {
         return this.socket;
     }
 
-    // API端点方法（用于REST API，而不是socket连接）
+    // 更新API端点方法，转发请求到MindServer
     startASR(req, res) {
-        if (this.agent) {
-            const result = this.agent.startASR();
-            if (result) {
-                res.json({ success: true, message: 'ASR started' });
-            } else {
-                res.status(500).json({ success: false, message: 'Failed to start ASR' });
-            }
+        if (this.connected) {
+            this.socket.emit('start-asr');
+            this.socket.once('asr-status', (status) => {
+                if (status.active) {
+                    res.json({ success: true, message: status.message });
+                } else {
+                    res.status(500).json({ success: false, message: status.message });
+                }
+            });
         } else {
-            res.status(404).json({ success: false, message: 'Agent not found' });
+            res.status(503).json({ success: false, message: 'Not connected to MindServer' });
         }
     }
       
     stopASR(req, res) {
-        if (this.agent) {
-            const result = this.agent.stopASR();
-            if (result) {
-                res.json({ success: true, message: 'ASR stopped' });
-            } else {
-                res.status(500).json({ success: false, message: 'Failed to stop ASR' });
-            }
+        if (this.connected) {
+            this.socket.emit('stop-asr');
+            this.socket.once('asr-status', (status) => {
+                if (!status.active) {
+                    res.json({ success: true, message: status.message });
+                } else {
+                    res.status(500).json({ success: false, message: status.message });
+                }
+            });
         } else {
-            res.status(404).json({ success: false, message: 'Agent not found' });
+            res.status(503).json({ success: false, message: 'Not connected to MindServer' });
+        }
+    }
+    
+    getASRStatus(req, res) {
+        if (this.connected) {
+            this.socket.emit('get-asr-status');
+            this.socket.once('asr-status', (status) => {
+                res.json({ active: status.active, message: status.message });
+            });
+        } else {
+            res.status(503).json({ success: false, message: 'Not connected to MindServer' });
         }
     }
 }

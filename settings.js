@@ -2,7 +2,7 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-30 16:59:55
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-05-02 12:27:18
+ * @LastEditTime: 2025-05-07 10:09:49
  * @FilePath: /mindcraft/settings.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -27,7 +27,6 @@ const settings = {
     "asr_continuous": false,     // 是否连续监听
     "asr_confidence_threshold": 0.7,  // 识别结果可信度阈值
     "asr_debug": false,          // 是否启用ASR调试模式
-    "asr_hotkey": "ShiftCmdT",   // 全局热键 (Mac: ShiftCmdT, Windows/Linux: ShiftCtrlT)
     
     // VAD设置
     "asr_vad_mode": 1,           // 0:关闭, 1:手动(热键), 2:自动(语音检测), 3:持续模式
@@ -59,7 +58,7 @@ const settings = {
     "language": "en", // translate to/from this language. Supports these language names: https://cloud.google.com/translate/docs/languages
     "show_bot_views": false, // show bot's view in browser at localhost:3000, 3001...
 
-    "allow_insecure_coding": false, // allows newAction command and model can write/run code on your computer. enable at own risk
+    "allow_insecure_coding": true, // allows newAction command and model can write/run code on your computer. enable at own risk
     "allow_vision": false, // allows vision model to interpret screenshots as inputs
     "blocked_actions" : [], // commands to disable and remove from docs. Ex: ["!setMode"]
     "code_timeout_mins": -1, // minutes code is allowed to run. -1 for no timeout
@@ -71,6 +70,10 @@ const settings = {
     "verbose_commands": true, // show full command syntax
     "narrate_behavior": true, // chat simple automatic actions ('Picking up item!')
     "chat_bot_messages": true, // publicly chat messages to other bots
+
+    // ASR服务实例(单例)和初始化状态
+    "asr_instance": null,        // ASR服务实例
+    "asr_initialized": false     // ASR服务是否已初始化
 }
 
 // these environment variables override certain settings

@@ -6,6 +6,30 @@ import { createMindServer } from './src/server/mind_server.js';
 import { mainProxy } from './src/process/main_proxy.js';
 import { readFileSync } from 'fs';
 
+// 添加进程退出时的清理函数
+function setupCleanupHandlers() {
+    const cleanupAndExit = (signal) => {
+        console.log(`\n收到${signal}信号，正在清理资源...`);
+        
+        try {
+            // 关闭主代理
+            if (mainProxy) {
+                console.log('正在关闭主代理...');
+                mainProxy.cleanup && mainProxy.cleanup();
+            }
+        } catch (error) {
+            console.error('清理资源时出错:', error);
+        }
+        
+        console.log('资源清理完成，正在退出程序');
+        process.exit(0);
+    };
+    
+    // 注册信号处理函数
+    process.on('SIGINT', () => cleanupAndExit('SIGINT'));  // Ctrl+C
+    process.on('SIGTERM', () => cleanupAndExit('SIGTERM')); // kill命令
+}
+
 function parseArguments() {
     return yargs(hideBin(process.argv))
         .option('profiles', {
@@ -30,6 +54,9 @@ function getProfiles(args) {
 }
 
 async function main() {
+    // 设置清理处理函数
+    setupCleanupHandlers();
+    
     if (settings.host_mindserver) {
         const mindServer = createMindServer(settings.mindserver_port);
     }

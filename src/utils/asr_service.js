@@ -2,7 +2,7 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-30 18:05:16
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-05-02 14:11:04
+ * @LastEditTime: 2025-05-06 20:57:22
  * @FilePath: /mindcraft/src/utils/asr_service.js
  * @Description: 豆包ASR语音识别服务
  */
@@ -10,6 +10,7 @@ import settings from '../../settings.js';
 import zlib from 'zlib';
 import crypto from 'crypto';
 import WebSocket from 'ws';
+import asrDispatcher from './asr_dispatcher.js';
 
 // 动态导入全局按键监听器
 let GlobalKeyboardListener;
@@ -73,7 +74,6 @@ export class ASRService {
         this.requestId = this.generateRequestId();
         this.sentAudioPackets = 0;
         this.globalKeyListener = null;
-        this.messageHandler = null;
         
         // ASR结果回调
         this.onResult = null;
@@ -102,9 +102,7 @@ export class ASRService {
         return crypto.randomUUID ? crypto.randomUUID() : `node_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
     }
     
-    async init(messageHandler) {
-        this.messageHandler = messageHandler;
-        
+    async init() {        
         // 初始化麦克风
         try {
             const mic = await import('mic');
@@ -408,10 +406,17 @@ export class ASRService {
                     isRecording = false;
                 }
             }
-            // 按Ctrl+C退出
+            // 按Ctrl+C退出 - 不拦截，恢复正常的终端状态后让系统处理
             else if (keyHex === '03') {
+                console.log("\nCtrl+C 按下，正在退出程序...");
                 this.cleanup();
-                process.exit(0);
+                
+                // 恢复标准模式，这样系统默认的SIGINT处理会正常工作
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+                
+                // 发送SIGINT信号给进程，触发系统默认的处理
+                process.kill(process.pid, 'SIGINT');
             }
         });
     }
@@ -484,15 +489,30 @@ export class ASRService {
         if (this.websocket) {
             try {
                 this.websocket.close();
+                console.log("已关闭WebSocket连接");
             } catch (error) {
                 console.error("关闭WebSocket连接失败:", error);
             }
+            this.websocket = null;
+        }
+        
+        // 恢复标准终端模式
+        try {
+            // 只有在使用终端按键模式时才需要恢复
+            if (this.vadMode === VAD_MODE.MANUAL && !globalKeyListenerAvailable) {
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+                console.log("已恢复标准终端模式");
+            }
+        } catch (error) {
+            console.error("恢复标准终端模式失败:", error);
         }
         
         // 停止全局热键监听
         if (this.globalKeyListener) {
             try {
                 this.globalKeyListener = null;
+                console.log("已停止全局热键监听");
             } catch (error) {
                 console.error("停止全局热键监听失败:", error);
             }
@@ -501,8 +521,9 @@ export class ASRService {
         // 清理其他资源
         this.vadAudioBuffer = [];
         this.audioDataBuffer = [];
-        this.websocket = null;
         this.isListening = false;
+        
+        console.log("ASR服务资源已清理完毕");
     }
     
     setupWebSocket() {
@@ -846,9 +867,9 @@ export class ASRService {
                 this.onResult(recognizedText);
             }
             
-            // 如果有消息处理函数，调用它
-            if (this.messageHandler && recognizedText.trim()) {
-                this.messageHandler(settings.player_name, recognizedText);
+            // 使用ASR分发器处理消息
+            if (recognizedText.trim()) {
+                asrDispatcher.dispatch(settings.player_name, recognizedText);
             }
         }
     }
