@@ -3,14 +3,14 @@ import { getKey, hasKey } from '../utils/keys.js';
 import { strictFormat } from '../utils/text.js';
 import { recordTokenUsage, estimateTokenCount } from '../utils/token_stats.js';
 
-export class Qwen {
+export class Doubao {
     constructor(model_name, url, params) {
         this.model_name = model_name;
         this.params = params;
         let config = {};
 
-        config.baseURL = url || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-        config.apiKey = getKey('QWEN_API_KEY');
+        config.baseURL = url || '';
+        config.apiKey = getKey('DOUBAO_API_KEY');
 
         this.openai = new OpenAIApi(config);
     }
@@ -21,7 +21,7 @@ export class Qwen {
         messages = strictFormat(messages);
 
         const pack = {
-            model: this.model_name || "qwen-plus",
+            model: this.model_name || "",
             messages,
             stop: stop_seq,
             ...(this.params || {})
@@ -29,7 +29,7 @@ export class Qwen {
 
         let res = null;
         try {
-            console.log('Awaiting Qwen api response...');
+            console.log('Awaiting Doubao api response...');
             // console.log('Messages:', messages);
             let completion = await this.openai.chat.completions.create(pack);
             
@@ -42,10 +42,10 @@ export class Qwen {
             // 记录token使用情况
             if (completion.usage) {
                 recordTokenUsage(
-                    this.model_name || "qwen-plus",
+                    this.model_name || "Doubao-plus",
                     completion.usage.prompt_tokens,
                     completion.usage.completion_tokens,
-                    'qwen',
+                    'Doubao',
                     agentName,
                     userMessage,
                     systemMessage,
@@ -58,10 +58,10 @@ export class Qwen {
                 const completionTokens = estimateTokenCount(completion.choices[0].message.content);
                 
                 recordTokenUsage(
-                    this.model_name || "qwen-plus",
+                    this.model_name || "Doubao-plus",
                     promptTokens,
                     completionTokens,
-                    'qwen',
+                    'Doubao',
                     agentName,
                     userMessage,
                     systemMessage,
@@ -81,8 +81,8 @@ export class Qwen {
             } else if (err.code === 'Arrearage' || (err.error && err.error.code === 'Arrearage') || 
                        err.message.includes('Access denied') || err.message.includes('account is in good standing')) {
                 // 处理账户欠费或状态异常
-                console.error('千问API账户状态异常:', err);
-                res = '千问API账户出现欠费或状态异常，请检查阿里云账户。错误信息: ' + err.message;
+                console.error('豆包API账户状态异常:', err);
+                res = '豆包API账户出现欠费或状态异常，请检查火山云账户。错误信息: ' + err.message;
             } else {
                 console.log(err);
                 res = 'My brain disconnected, try again.';
@@ -92,7 +92,7 @@ export class Qwen {
     }
 
     // Why random backoff?
-    // With a 30 requests/second limit on Alibaba Qwen's embedding service,
+    // With a 30 requests/second limit on Alibaba Doubao's embedding service,
     // random backoff helps maximize bandwidth utilization.
     async embed(text, agentName = '') {
         const maxRetries = 5; // Maximum number of retries
@@ -110,7 +110,7 @@ export class Qwen {
                         this.model_name || "text-embedding-v3",
                         data[0].usage.prompt_tokens || estimateTokenCount(text),
                         0, // embedding通常没有completion tokens
-                        'qwen',
+                        'Doubao',
                         agentName,
                         text.substring(0, 100) + (text.length > 100 ? '...' : ''), // 截断过长的文本
                         'embedding', 
@@ -122,7 +122,7 @@ export class Qwen {
                         this.model_name || "text-embedding-v3",
                         estimateTokenCount(text),
                         0,
-                        'qwen',
+                        'Doubao',
                         agentName,
                         text.substring(0, 100) + (text.length > 100 ? '...' : ''),
                         'embedding',
@@ -140,8 +140,8 @@ export class Qwen {
                 } else if (err.code === 'Arrearage' || (err.error && err.error.code === 'Arrearage') || 
                           err.message.includes('Access denied') || err.message.includes('account is in good standing')) {
                     // 处理账户欠费或状态异常
-                    console.error('千问API账户状态异常:', err);
-                    throw new Error('千问API账户出现欠费或状态异常，请检查阿里云账户');
+                    console.error('豆包API账户状态异常:', err);
+                    throw new Error('豆包API账户出现欠费或状态异常，请检查火山云账户');
                 } else {
                     throw err;
                 }

@@ -3,6 +3,7 @@ import * as mc from '../../utils/mcdata.js';
 import { getCommandDocs } from './index.js';
 import convoManager from '../conversation.js';
 import { load } from 'cheerio';
+import { getTokenSummary, getTokenStats } from '../../utils/token_stats.js';
 
 const pad = (str) => {
     return '\n' + str + '\n';
@@ -283,6 +284,57 @@ export const queryList = [
                 return "语音识别服务未初始化。";
             }
             return `语音识别状态: ${agent.asr.isListening ? '活跃' : '未活跃'}`;
+        }
+    },
+    {
+        name: "!tokenStats",
+        description: "显示LLM token使用统计数据，包括总量、按模型和API提供商的分布",
+        perform: function (agent) {
+            const stats = getTokenSummary();
+            // 获取原始统计数据，包含lastUpdated
+            const fullStats = getTokenStats();
+            
+            let output = '### LLM Token使用统计 ###\n\n';
+            
+            // 添加最后更新时间
+            const lastUpdateTime = new Date(fullStats.lastUpdated);
+            const formattedTime = lastUpdateTime.toLocaleString('zh-CN', {
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            output += `**最后更新时间:** ${formattedTime} (北京时间)\n\n`;
+            
+            output += `**总使用量:**\n`;
+            output += `- 提示词: ${stats.total.prompt.toLocaleString()} tokens\n`;
+            output += `- 补全: ${stats.total.completion.toLocaleString()} tokens\n`;
+            output += `- 总计: ${stats.total.total.toLocaleString()} tokens\n\n`;
+            
+            output += `**今日使用量:**\n`;
+            output += `- 提示词: ${stats.today.prompt.toLocaleString()} tokens\n`;
+            output += `- 补全: ${stats.today.completion.toLocaleString()} tokens\n`;
+            output += `- 总计: ${stats.today.total.toLocaleString()} tokens\n\n`;
+            
+            output += `**使用量最多的模型:**\n`;
+            stats.byModel.forEach(([model, usage]) => {
+                output += `- ${model}: ${usage.total.toLocaleString()} tokens\n`;
+            });
+            
+            output += `\n**按API提供商分类:**\n`;
+            Object.entries(stats.byAPI).forEach(([api, usage]) => {
+                output += `- ${api}: ${usage.total.toLocaleString()} tokens\n`;
+            });
+            
+            // 添加统计天数
+            const dayCount = Object.keys(fullStats.dailyStats).length;
+            output += `\n**统计天数:** ${dayCount}天\n`;
+            
+            return pad(output);
         }
     },
 ];

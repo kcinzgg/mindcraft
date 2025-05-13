@@ -4,13 +4,13 @@
     "cooldown": 5000,
 
     "model": {
-        "api": "deepseek",
+        "api": "doubao",
         "url": "https://ark.cn-beijing.volces.com/api/v3",
         "model": "doubao-pro-32k-241215"
     },
 
     "embedding": {
-        "api": "deepseek",
+        "api": "doubao",
         "url": "https://ark.cn-beijing.volces.com/api/v3",
         "model": "doubao-embedding-text-240715"
     }

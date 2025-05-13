@@ -6,7 +6,7 @@
     "model": {
         "api": "qwen",
         "url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "model": "qwen-plus-latest"
+        "model": "qwen3-235b-a22b"
     },
 
     "embedding": {
