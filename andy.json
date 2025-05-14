@@ -6,12 +6,28 @@
     "model": {
         "api": "qwen",
         "url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "model": "qwen3-235b-a22b"
+        "model": "qwen3-235b-a22b",
+
+        "params": {
+            "stream": false,
+            "enable_thinking": false
+        }
     },
 
     "embedding": {
         "api": "qwen",
         "url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
         "model": "text-embedding-v3"
+    },
+
+    "code_model": {
+        "api": "qwen",
+        "url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model": "qwen3-235b-a22b",
+
+        "params": {
+            "stream": false,
+            "enable_thinking": false
+        }
     }
 }

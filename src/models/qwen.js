@@ -24,8 +24,8 @@ export class Qwen {
         const pack = {
             model: this.model_name || "qwen-plus",
             messages,
-            stream: false,
-            enable_thinking: false,
+            // stream: false,
+            // enable_thinking: false,
             stop: stop_seq,
             ...(this.params || {})
         };
