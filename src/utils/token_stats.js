@@ -79,7 +79,7 @@ const initStats = () => {
 };
 
 // 记录详细token使用日志到CSV文件
-export const recordTokenDetail = (agentName, userMessage, systemMessage, toolsNum, promptTokens, completionTokens) => {
+export const recordTokenDetail = (agentName, userMessage, systemMessage, toolsNum, promptTokens, completionTokens, llmResponse = '') => {
   ensureLogDir();
   
   const uuid = uuidv4();
@@ -106,6 +106,7 @@ export const recordTokenDetail = (agentName, userMessage, systemMessage, toolsNu
   
   const userMsg = cleanMessage(userMessage);
   const sysMsg = cleanMessage(systemMessage);
+  const llmResp = cleanMessage(llmResponse);
   
   const csvLine = [
     escapeCsvField(uuid),
@@ -116,12 +117,13 @@ export const recordTokenDetail = (agentName, userMessage, systemMessage, toolsNu
     escapeCsvField(toolsNum),
     escapeCsvField(promptTokens),
     escapeCsvField(completionTokens),
-    escapeCsvField(totalTokens)
+    escapeCsvField(totalTokens),
+    escapeCsvField(llmResp)
   ].join(',') + '\n';
   
   // 检查文件是否存在，不存在则创建并添加表头
   if (!fs.existsSync(TOKEN_DETAIL_LOG)) {
-    const header = 'uuid,time,agent_name,user_message,system_message,tools_num,prompt_tokens,completion_tokens,total_tokens\n';
+    const header = 'uuid,time,agent_name,user_message,system_message,tools_num,prompt_tokens,completion_tokens,total_tokens,llm_response\n';
     fs.writeFileSync(TOKEN_DETAIL_LOG, header);
   }
   
@@ -134,7 +136,7 @@ export const recordTokenDetail = (agentName, userMessage, systemMessage, toolsNu
 };
 
 // 更新recordTokenUsage函数以同时记录详细日志
-export const recordTokenUsage = (modelName, promptTokens, completionTokens, api, agentName = '', userMessage = '', systemMessage = '', toolsNum = 0) => {
+export const recordTokenUsage = (modelName, promptTokens, completionTokens, api, agentName = '', userMessage = '', systemMessage = '', toolsNum = 0, llmResponse = '') => {
   let stats = initStats();
   const today = getBeijingDate();
   
@@ -183,7 +185,7 @@ export const recordTokenUsage = (modelName, promptTokens, completionTokens, api,
   
   // 同时记录详细日志（如果提供了agent信息）
   if (agentName) {
-    recordTokenDetail(agentName, userMessage, systemMessage, toolsNum, promptTokens, completionTokens);
+    recordTokenDetail(agentName, userMessage, systemMessage, toolsNum, promptTokens, completionTokens, llmResponse);
   }
   
   // 保存统计数据

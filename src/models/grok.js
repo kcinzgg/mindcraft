@@ -19,14 +19,16 @@ export class Grok {
         this.openai = new OpenAIApi(config);
     }
 
-    async sendRequest(turns, systemMessage, stop_seq='***') {
+    async sendRequest(turns, systemMessage, stop_seq='***', agentName = '', toolsNum = 0) {
         let messages = [{'role': 'system', 'content': systemMessage}].concat(turns);
 
         const pack = {
             model: this.model_name || "grok-beta",
             messages,
             stop: [stop_seq],
-            ...(this.params || {})
+            ...(this.params || {}),
+            agentName,
+            toolsNum
         };
 
         let res = null;
@@ -42,7 +44,7 @@ export class Grok {
         catch (err) {
             if ((err.message == 'Context length exceeded' || err.code == 'context_length_exceeded') && turns.length > 1) {
                 console.log('Context length exceeded, trying again with shorter context.');
-                return await this.sendRequest(turns.slice(1), systemMessage, stop_seq);
+                return await this.sendRequest(turns.slice(1), systemMessage, stop_seq, agentName, toolsNum);
             } else if (err.message.includes('The model expects a single `text` element per message.')) {
                 console.log(err);
                 res = 'Vision is only supported by certain models.';
@@ -55,7 +57,7 @@ export class Grok {
         return res.replace(/<\|separator\|>/g, '*no response*');
     }
 
-    async sendVisionRequest(messages, systemMessage, imageBuffer) {
+    async sendVisionRequest(messages, systemMessage, imageBuffer, agentName = '', toolsNum = 0) {
         const imageMessages = [...messages];
         imageMessages.push({
             role: "user",
@@ -70,7 +72,7 @@ export class Grok {
             ]
         });
         
-        return this.sendRequest(imageMessages, systemMessage);
+        return this.sendRequest(imageMessages, systemMessage, undefined, agentName, toolsNum);
     }
     
     async embed(text) {

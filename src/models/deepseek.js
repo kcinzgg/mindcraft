@@ -58,7 +58,8 @@ export class DeepSeek {
                     agentName,
                     userMessage,
                     systemMessage,
-                    toolsNum
+                    toolsNum,
+                    completion.choices[0].message.content
                 );
             } else {
                 // 如果API未返回token使用信息，使用估算器
@@ -74,7 +75,8 @@ export class DeepSeek {
                     agentName,
                     userMessage,
                     systemMessage,
-                    toolsNum
+                    toolsNum,
+                    completion.choices[0].message.content
                 );
             }
             

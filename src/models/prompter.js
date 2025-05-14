@@ -98,6 +98,8 @@ export class Prompter {
                 this.embedding_model = new Local(embedding.model, embedding.url);
             else if (embedding.api === 'qwen')
                 this.embedding_model = new Qwen(embedding.model, embedding.url);
+            else if (embedding.api === 'doubao')
+                this.embedding_model = new Doubao(embedding.model, embedding.url);
             else if (embedding.api === 'mistral')
                 this.embedding_model = new Mistral(embedding.model, embedding.url);
             else if (embedding.api === 'huggingface')
@@ -472,7 +474,13 @@ export class Prompter {
         await this.checkCooldown();
         let prompt = this.profile.saving_memory;
         prompt = await this.replaceStrings(prompt, null, null, to_summarize);
-        return await this.chat_model.sendRequest([], prompt);
+        return await this.chat_model.sendRequest(
+            [], 
+            prompt, 
+            undefined, 
+            this.agent.name, 
+            0, // 内存摘要不涉及工具调用
+        );
     }
 
     async promptShouldRespondToBot(new_message) {
@@ -481,7 +489,13 @@ export class Prompter {
         let messages = this.agent.history.getHistory();
         messages.push({role: 'user', content: new_message});
         prompt = await this.replaceStrings(prompt, null, null, messages);
-        let res = await this.chat_model.sendRequest([], prompt);
+        let res = await this.chat_model.sendRequest(
+            [], 
+            prompt, 
+            undefined, 
+            this.agent.name, 
+            0, // 判断是否回复机器人不涉及工具调用
+        );
         return res.trim().toLowerCase() === 'respond';
     }
 
@@ -489,7 +503,37 @@ export class Prompter {
         await this.checkCooldown();
         let prompt = this.profile.image_analysis;
         prompt = await this.replaceStrings(prompt, messages, null, null, null);
-        return await this.vision_model.sendVisionRequest(messages, prompt, imageBuffer);
+        
+        // 从消息中提取用户的最后一条消息作为userMessage
+        let userMessage = '';
+        if (messages && messages.length > 0) {
+            for (let i = messages.length - 1; i >= 0; i--) {
+                if (messages[i].role === 'user') {
+                    userMessage = messages[i].content;
+                    break;
+                }
+            }
+        }
+        
+        // 检查是否需要使用sendVisionRequest方法，如果不存在则降级使用sendRequest
+        if (typeof this.vision_model.sendVisionRequest === 'function') {
+            return await this.vision_model.sendVisionRequest(
+                messages, 
+                prompt, 
+                imageBuffer,
+                this.agent.name,
+                0 // 图像分析一般不涉及工具调用
+            );
+        } else {
+            // 如果没有专门的视觉请求方法，则使用普通的sendRequest
+            return await this.vision_model.sendRequest(
+                messages, 
+                prompt, 
+                undefined,
+                this.agent.name,
+                0 // 图像分析一般不涉及工具调用
+            );
+        }
     }
 
     async promptGoalSetting(messages, last_goals) {
@@ -497,11 +541,17 @@ export class Prompter {
         system_message = await this.replaceStrings(system_message, messages);
 
         let user_message = 'Use the below info to determine what goal to target next\n\n';
-        user_message += '$LAST_GOALS\n$STATS\n$INVENTORY\n$CONVO'
+        user_message += '$LAST_GOALS\n$STATS\n$INVENTORY\n$CONVO';
         user_message = await this.replaceStrings(user_message, messages, null, null, last_goals);
         let user_messages = [{role: 'user', content: user_message}];
 
-        let res = await this.chat_model.sendRequest(user_messages, system_message);
+        let res = await this.chat_model.sendRequest(
+            user_messages, 
+            system_message, 
+            undefined, 
+            this.agent.name, 
+            0, // 目标设定不涉及工具调用
+        );
 
         let goal = null;
         try {

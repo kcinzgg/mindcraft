@@ -19,14 +19,16 @@ export class GPT {
         this.openai = new OpenAIApi(config);
     }
 
-    async sendRequest(turns, systemMessage, stop_seq='***') {
+    async sendRequest(turns, systemMessage, stop_seq='***', agentName = '', toolsNum = 0) {
         let messages = [{'role': 'system', 'content': systemMessage}].concat(turns);
 
         const pack = {
             model: this.model_name || "gpt-3.5-turbo",
             messages,
             stop: stop_seq,
-            ...(this.params || {})
+            ...(this.params || {}),
+            agentName,
+            toolsNum
         };
         if (this.model_name.includes('o1')) {
             pack.messages = strictFormat(messages);
@@ -47,7 +49,7 @@ export class GPT {
         catch (err) {
             if ((err.message == 'Context length exceeded' || err.code == 'context_length_exceeded') && turns.length > 1) {
                 console.log('Context length exceeded, trying again with shorter context.');
-                return await this.sendRequest(turns.slice(1), systemMessage, stop_seq);
+                return await this.sendRequest(turns.slice(1), systemMessage, stop_seq, agentName, toolsNum);
             } else if (err.message.includes('image_url')) {
                 console.log(err);
                 res = 'Vision is only supported by certain models.';
@@ -59,7 +61,7 @@ export class GPT {
         return res;
     }
 
-    async sendVisionRequest(messages, systemMessage, imageBuffer) {
+    async sendVisionRequest(messages, systemMessage, imageBuffer, agentName = '', toolsNum = 0) {
         const imageMessages = [...messages];
         imageMessages.push({
             role: "user",
@@ -74,7 +76,7 @@ export class GPT {
             ]
         });
         
-        return this.sendRequest(imageMessages, systemMessage);
+        return this.sendRequest(imageMessages, systemMessage, '***', agentName, toolsNum);
     }
 
     async embed(text) {

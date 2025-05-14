@@ -35,7 +35,7 @@ export class Mistral {
         }
     }
 
-    async sendRequest(turns, systemMessage) {
+    async sendRequest(turns, systemMessage, agentName = '', toolsNum = 0) {
 
         let result;
 
@@ -55,6 +55,22 @@ export class Mistral {
             });
 
             result = response.choices[0].message.content;
+            
+            // 如果有提供用户信息，记录token使用量
+            if (response.usage && agentName) {
+                const { recordTokenUsage } = await import('../utils/token_stats.js');
+                recordTokenUsage(
+                    model,
+                    response.usage.prompt_tokens || 0,
+                    response.usage.completion_tokens || 0,
+                    'mistral',
+                    agentName,
+                    turns.length > 0 ? turns[turns.length-1].content : '',
+                    systemMessage,
+                    toolsNum,
+                    result
+                );
+            }
         } catch (err) {
             if (err.message.includes("A request containing images has been given to a model which does not have the 'vision' capability.")) {
                 result = "Vision is only supported by certain models.";
@@ -67,7 +83,7 @@ export class Mistral {
         return result;
     }
 
-    async sendVisionRequest(messages, systemMessage, imageBuffer) {
+    async sendVisionRequest(messages, systemMessage, imageBuffer, agentName = '', toolsNum = 0) {
         const imageMessages = [...messages];
         imageMessages.push({
             role: "user",
@@ -80,7 +96,7 @@ export class Mistral {
             ]
         });
         
-        return this.sendRequest(imageMessages, systemMessage);
+        return this.sendRequest(imageMessages, systemMessage, agentName, toolsNum);
     }
 
     async embed(text) {

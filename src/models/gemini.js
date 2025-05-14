@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { toSinglePrompt, strictFormat } from '../utils/text.js';
 import { getKey } from '../utils/keys.js';
+import { recordTokenUsage } from '../utils/token_stats.js';
 
 export class Gemini {
     constructor(model_name, url, params) {
@@ -96,7 +97,7 @@ export class Gemini {
         return text;
     }
 
-    async sendVisionRequest(turns, systemMessage, imageBuffer) {
+    async sendVisionRequest(turns, systemMessage, imageBuffer, agentName = '', toolsNum = 0) {
         let model;
         if (this.url) {
             model = this.genAI.getGenerativeModel(
@@ -127,6 +128,22 @@ export class Gemini {
             const response = await result.response;
             const text = response.text();
             console.log('Received.');
+            
+            // 记录token使用情况(如果需要的话)
+            if (response.promptFeedback && response.promptFeedback.tokenCount) {
+                recordTokenUsage(
+                    this.model_name || "gemini-1.5-flash",
+                    response.promptFeedback.tokenCount,
+                    response.candidates?.[0]?.tokenCount || 0,
+                    'google',
+                    agentName,
+                    prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
+                    systemMessage,
+                    toolsNum,
+                    text
+                );
+            }
+            
             if (!text.includes(stop_seq)) return text;
             const idx = text.indexOf(stop_seq);
             res = text.slice(0, idx);

@@ -27,51 +27,54 @@ export class GroqCloudAPI {
 
     }
 
-    async sendRequest(turns, systemMessage, stop_seq = null) {
-        // Construct messages array
-        let messages = [{"role": "system", "content": systemMessage}].concat(turns);
-
-        let res = null;
-
+    async sendRequest(messages, systemMessage = undefined, agentName = '', toolsNum = 0) {
+        let messagePayload;
+        
+        // 处理系统消息
+        if (systemMessage) {
+            messagePayload = [{ role: 'system', content: systemMessage }].concat(messages);
+        } else {
+            messagePayload = [...messages];
+        }
+        
         try {
-            console.log("Awaiting Groq response...");
-
-            // Handle deprecated max_tokens parameter
-            if (this.params.max_tokens) {
-                console.warn("GROQCLOUD WARNING: A profile is using `max_tokens`. This is deprecated. Please move to `max_completion_tokens`.");
-                this.params.max_completion_tokens = this.params.max_tokens;
-                delete this.params.max_tokens;
-            }
-
-            if (!this.params.max_completion_tokens) {
-                this.params.max_completion_tokens = 4000;
-            }
-
-            let completion = await this.groq.chat.completions.create({
-                "messages": messages,
-                "model": this.model_name || "llama-3.3-70b-versatile",
-                "stream": false,
-                "stop": stop_seq,
+            console.log('Awaiting Groq response...');
+            const completionRequest = {
+                model: this.model_name, 
+                messages: messagePayload,
                 ...(this.params || {})
-            });
-
-            res = completion.choices[0].message;
-
-            res = res.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-        }
-        catch(err) {
-            if (err.message.includes("content must be a string")) {
-                res = "Vision is only supported by certain models.";
-            } else {
-                console.log(this.model_name);
-                res = "My brain disconnected, try again.";
+            };
+            
+            const completion = await this.groq.chat.completions.create(completionRequest);
+            console.log('Received.');
+            
+            // 记录token使用情况，如果API返回
+            if (completion.usage && agentName) {
+                const { recordTokenUsage } = await import('../utils/token_stats.js');
+                recordTokenUsage(
+                    this.model_name,
+                    completion.usage.prompt_tokens || 0,
+                    completion.usage.completion_tokens || 0,
+                    'groq',
+                    agentName,
+                    messages.length > 0 ? (messages[messages.length-1].content || '') : '',
+                    systemMessage || '',
+                    toolsNum,
+                    completion.choices[0].message.content
+                );
             }
-            console.log(err);
+            
+            return completion.choices[0].message.content;
+        } catch (error) {
+            console.log('Error from Groq:', error);
+            if (error.message.includes('context_length_exceeded') && messages.length > 1) {
+                return this.sendRequest(messages.slice(1), systemMessage, agentName, toolsNum);
+            }
+            return "My brain disconnected, try again.";
         }
-        return res;
     }
 
-    async sendVisionRequest(messages, systemMessage, imageBuffer) {
+    async sendVisionRequest(messages, systemMessage, imageBuffer, agentName = '', toolsNum = 0) {
         const imageMessages = messages.filter(message => message.role !== 'system');
         imageMessages.push({
             role: "user",
@@ -86,7 +89,7 @@ export class GroqCloudAPI {
             ]
         });
         
-        return this.sendRequest(imageMessages);
+        return this.sendRequest(imageMessages, undefined, agentName, toolsNum);
     }
 
     async embed(_) {

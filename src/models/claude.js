@@ -16,7 +16,7 @@ export class Claude {
         this.anthropic = new Anthropic(config);
     }
 
-    async sendRequest(turns, systemMessage) {
+    async sendRequest(turns, systemMessage, agentName = '', toolsNum = 0) {
         const messages = strictFormat(turns);
         let res = null;
         try {
@@ -33,7 +33,9 @@ export class Claude {
                 model: this.model_name || "claude-3-sonnet-20240229",
                 system: systemMessage,
                 messages: messages,
-                ...(this.params || {})
+                ...(this.params || {}),
+                agentName,
+                toolsNum
             });
 
             console.log('Received.')
@@ -57,7 +59,7 @@ export class Claude {
         return res;
     }
 
-    async sendVisionRequest(turns, systemMessage, imageBuffer) {
+    async sendVisionRequest(turns, systemMessage, imageBuffer, agentName = '', toolsNum = 0) {
         const imageMessages = [...turns];
         imageMessages.push({
             role: "user",
@@ -77,7 +79,7 @@ export class Claude {
             ]
         });
 
-        return this.sendRequest(imageMessages, systemMessage);
+        return this.sendRequest(imageMessages, systemMessage, agentName, toolsNum);
     }
 
     async embed(text) {

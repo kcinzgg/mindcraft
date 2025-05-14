@@ -49,7 +49,8 @@ export class Doubao {
                     agentName,
                     userMessage,
                     systemMessage,
-                    toolsNum
+                    toolsNum,
+                    completion.choices[0].message.content
                 );
             } else {
                 // 如果API未返回token使用信息，使用估算器
@@ -65,7 +66,8 @@ export class Doubao {
                     agentName,
                     userMessage,
                     systemMessage,
-                    toolsNum
+                    toolsNum,
+                    completion.choices[0].message.content
                 );
             }
             
@@ -114,7 +116,8 @@ export class Doubao {
                         agentName,
                         text.substring(0, 100) + (text.length > 100 ? '...' : ''), // 截断过长的文本
                         'embedding', 
-                        0
+                        0,
+                        '' // embedding没有LLM响应内容
                     );
                 } else {
                     // 估算embedding的token使用量
@@ -126,7 +129,8 @@ export class Doubao {
                         agentName,
                         text.substring(0, 100) + (text.length > 100 ? '...' : ''),
                         'embedding',
-                        0
+                        0,
+                        '' // embedding没有LLM响应内容
                     );
                 }
                 
