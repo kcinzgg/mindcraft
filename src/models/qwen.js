@@ -20,9 +20,12 @@ export class Qwen {
 
         messages = strictFormat(messages);
 
+        // 创建请求参数包
         const pack = {
             model: this.model_name || "qwen-plus",
             messages,
+            stream: false,
+            enable_thinking: false,
             stop: stop_seq,
             ...(this.params || {})
         };

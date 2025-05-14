@@ -2,7 +2,7 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-30 16:59:55
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-05-13 16:46:37
+ * @LastEditTime: 2025-05-14 17:38:58
  * @FilePath: /mindcraft/settings.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -37,8 +37,8 @@ const settings = {
     // the base profile is shared by all bots for default prompts/examples/modes
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json
     "profiles": [
-        // "./andy.json",
-        "./jack.json",
+        "./andy.json",
+        // "./jack.json",
         // "./profiles/gpt.json",
         // "./profiles/claude.json",
         // "./profiles/gemini.json",
@@ -52,7 +52,8 @@ const settings = {
         // individual profiles override values from the base profile
     ],
     "load_memory": false, // load memory from previous session
-    "init_message": "Respond with hello world and your name in chinese and always use chinese", // sends to all on spawn
+    // "init_message": "Respond with hello world and your name in chinese and always use chinese", // sends to all on spawn
+    "init_message": "用中文打招呼，并始终用中文进行回复", // sends to all on spawn
     "only_chat_with": [], // users that the bots listen to and send general messages to. if empty it will chat publicly
     "speak": true, // allows all bots to speak through system text-to-speech. works on windows, mac, on linux you need to `apt install espeak`
     "language": "en", // translate to/from this language. Supports these language names: https://cloud.google.com/translate/docs/languages

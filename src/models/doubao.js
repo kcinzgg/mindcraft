@@ -94,7 +94,7 @@ export class Doubao {
     }
 
     // Why random backoff?
-    // With a 30 requests/second limit on Alibaba Doubao's embedding service,
+    // With a 30 requests/second limit on Doubao's embedding service,
     // random backoff helps maximize bandwidth utilization.
     async embed(text, agentName = '') {
         const maxRetries = 5; // Maximum number of retries
