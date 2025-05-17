@@ -17,3 +17,4 @@ tmp/
 wandb/
 experiments/
 logs/
+temp/

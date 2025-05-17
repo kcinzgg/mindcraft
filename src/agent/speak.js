@@ -6,16 +6,20 @@
  * @FilePath: /mindcraft/src/agent/speak.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import WebSocket from 'ws';
 import zlib from 'zlib';
 import settings from '../../settings.js';
+import player from 'play-sound';
+import os from 'os';
 
 let speakingQueue = [];
 let isSpeaking = false;
+
+const soundPlayer = player();
 
 // 初始化目录
 const initDirectories = () => {
@@ -422,31 +426,37 @@ function parseResponseInMemory(res, audioChunks) {
  */
 async function playAudio(filePath) {
   return new Promise((resolve, reject) => {
-    let command;
+    let player, args;
 
-    switch (process.platform) {
-      case 'darwin':
-        // macOS
-        command = `afplay "${filePath}"`;
-        break;
-      case 'win32':
-        // Windows - 使用PowerShell播放并等待完成
-        command = `powershell -c "(New-Object Media.SoundPlayer '${filePath.replace(/\//g, '\\')}').PlaySync()"`;
-        break;
-      default:
-        // Linux 或其他系统
-        command = `mplayer "${filePath}" 2>/dev/null || mpg123 "${filePath}" 2>/dev/null || espeak "无法播放音频"`;
-        break;
+    // 优先用 ffplay
+    player = 'ffplay';
+    args = ['-nodisp', '-autoexit', filePath];
+
+    // macOS 优先 afplay
+    if (os.platform() === 'darwin') {
+      player = 'afplay';
+      args = [filePath];
+    }
+    // Linux 可选 ffplay
+    else if (os.platform() === 'linux') {
+      player = 'ffplay';
+      args = ['-nodisp', '-autoexit', filePath];
+    }
+    // Windows 优先 ffplay
+    else if (os.platform() === 'win32') {
+      player = 'ffplay';
+      args = ['-nodisp', '-autoexit', filePath];
     }
 
     if (settings.tts_debug) {
       console.log(`正在播放音频: ${filePath}`);
+      console.log(`调用播放器: ${player} ${args.join(' ')}`);
     }
 
-    exec(command, (error) => {
-      if (error) {
-        console.error(`播放音频时出错: ${error}`);
-        reject(error);
+    const child = execFile(player, args, (err) => {
+      if (err) {
+        console.error('播放音频时出错:', err);
+        reject(err);
       } else {
         if (settings.tts_debug) {
           console.log('音频播放完成');
@@ -454,6 +464,9 @@ async function playAudio(filePath) {
         resolve();
       }
     });
+    // 静默
+    child.stdout?.destroy();
+    child.stderr?.destroy();
   });
 }
 

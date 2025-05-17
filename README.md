@@ -14,6 +14,40 @@ Do not connect this bot to public servers with coding enabled. This project allo
 - [Node.js Installed](https://nodejs.org/) (at least v14)
 - One of these: [OpenAI API Key](https://openai.com/blog/openai-api) | [Gemini API Key](https://aistudio.google.com/app/apikey) | [Anthropic API Key](https://docs.anthropic.com/claude/docs/getting-access-to-claude) | [Replicate API Key](https://replicate.com/) | [Hugging Face API Key](https://huggingface.co/) | [Groq API Key](https://console.groq.com/keys) | [Ollama Installed](https://ollama.com/download). | [Mistral API Key](https://docs.mistral.ai/getting-started/models/models_overview/) | [Qwen API Key [Intl.]](https://www.alibabacloud.com/help/en/model-studio/developer-reference/get-api-key)/[[cn]](https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen?) | [Novita AI API Key](https://novita.ai/settings?utm_source=github_mindcraft&utm_medium=github_readme&utm_campaign=link#key-management) |
 
+## Additional Audio Requirements
+
+本项目的语音合成功能依赖于音频播放器和处理工具。请根据你的操作系统安装以下工具：
+
+### 1. FFmpeg（含 ffplay，用于静默播放 mp3，强烈推荐）
+- **Windows**：
+  1. 访问 [FFmpeg官网](https://ffmpeg.org/download.html) 或 [gyan.dev下载页](https://www.gyan.dev/ffmpeg/builds/)。
+  2. 下载 Windows 版本（推荐 Essentials 版），解压后将 `bin` 目录（如 `C:\ffmpeg\bin`）加入到系统 PATH 环境变量。
+- **macOS**：
+  ```bash
+  brew install ffmpeg
+  ```
+- **Linux（Debian/Ubuntu）**：
+  ```bash
+  sudo apt-get install ffmpeg
+  ```
+- **用途**：用于跨平台静默播放 mp3 音频，无界面、自动关闭。
+
+### 2. Sox（部分录音/音频处理功能依赖，可选）
+- **Windows**：
+  1. 访问 [Sox官网](https://sourceforge.net/projects/sox/files/sox/)。
+  2. 下载 Windows 版本，解压后将 sox.exe 所在目录加入 PATH。
+- **macOS**：
+  ```bash
+  brew install sox
+  ```
+- **Linux（Debian/Ubuntu）**：
+  ```bash
+  sudo apt-get install sox
+  ```
+- **用途**：用于音频格式转换、录音等高级音频处理（如遇到 `spawn sox ENOENT` 报错时需安装）。
+
+> 安装完成后，务必重启命令行或IDE，确保新环境变量生效。
+
 ## Install and Run
 
 1. Make sure you have the requirements above.

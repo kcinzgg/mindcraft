@@ -33,7 +33,7 @@
     
     "tts": {
         "engine": "bytedance",
-        "voice": "zh_female_linjianvhai_moon_bigtts",
+        "voice": "zh_female_wanwanxiaohe_moon_bigtts",
         "emotion": "neutral"
     }
 }

@@ -29,7 +29,7 @@ const settings = {
     "asr_debug": false,          // 是否启用ASR调试模式
     
     // TTS设置
-    "tts_engine": "bytedance",      // TTS引擎选择: "system"(系统TTS), "bytedance"(字节TTS), "doubao"(豆包TTS)
+    "tts_engine": "system",      // TTS引擎选择: "system"(系统TTS), "bytedance"(字节TTS)
     "enable_tts": true,          // 是否启用TTS功能
     "tts_debug": false,          // 是否启用TTS调试模式
     
@@ -48,7 +48,7 @@ const settings = {
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json
     "profiles": [
         "./andy.json",
-        "./jack.json",
+        // "./jack.json",
         // "./profiles/gpt.json",
         // "./profiles/claude.json",
         // "./profiles/gemini.json",
