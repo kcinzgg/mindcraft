@@ -2,7 +2,7 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-30 16:59:55
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-05-17 19:09:50
+ * @LastEditTime: 2025-05-17 21:19:04
  * @FilePath: /mindcraft/settings.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -28,6 +28,16 @@ const settings = {
     "asr_confidence_threshold": 0.7,  // 识别结果可信度阈值
     "asr_debug": false,          // 是否启用ASR调试模式
     
+    // TTS设置
+    "tts_engine": "bytedance",      // TTS引擎选择: "system"(系统TTS), "bytedance"(字节TTS), "doubao"(豆包TTS)
+    "enable_tts": true,          // 是否启用TTS功能
+    "tts_debug": false,          // 是否启用TTS调试模式
+    
+    // 字节跳动TTS设置 
+    "bytedance_tts_app_id": "9954471235",  // 字节TTS应用ID
+    "bytedance_tts_token": "riXplQ9eQMUg1K1GJIqgt_kRSWZU3zW9", // 字节TTS令牌
+    "bytedance_tts_voice": "zh_male_yangguangqingnian_emo_v2_mars_bigtts", // 字节TTS音色
+    
     // VAD设置
     "asr_vad_mode": 1,           // 0:关闭, 1:手动(热键), 2:自动(语音检测), 3:持续模式
     "asr_silence_timeout": 2000, // 静音超时(毫秒)，超过此时间无声音则停止录音
@@ -38,7 +48,7 @@ const settings = {
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json
     "profiles": [
         "./andy.json",
-        // "./jack.json",
+        "./jack.json",
         // "./profiles/gpt.json",
         // "./profiles/claude.json",
         // "./profiles/gemini.json",
@@ -56,7 +66,7 @@ const settings = {
     "init_message": "用中文打招呼，并始终用中文进行回复", // sends to all on spawn
     "only_chat_with": [], // users that the bots listen to and send general messages to. if empty it will chat publicly
     "speak": true, // allows all bots to speak through system text-to-speech. works on windows, mac, on linux you need to `apt install espeak`
-    "language": "en", // translate to/from this language. Supports these language names: https://cloud.google.com/translate/docs/languages
+    "language": "en", // translate to/from this language. Supports these language names: https://cloud.tencent.com/translate/docs/languages
     "show_bot_views": true, // show bot's view in browser at localhost:3000, 3001...
 
     "allow_insecure_coding": true, // allows newAction command and model can write/run code on your computer. enable at own risk
@@ -74,7 +84,9 @@ const settings = {
 
     // ASR服务实例(单例)和初始化状态
     "asr_instance": null,        // ASR服务实例
-    "asr_initialized": false     // ASR服务是否已初始化
+    "asr_initialized": false,    // ASR服务是否已初始化
+    "tts_instance": null,        // TTS服务实例
+    "tts_initialized": false     // TTS服务是否已初始化
 }
 
 // these environment variables override certain settings

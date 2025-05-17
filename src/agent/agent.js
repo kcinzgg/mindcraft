@@ -359,7 +359,7 @@ export class Agent {
         }
         else {
 	    if (settings.speak) {
-            say(to_translate);
+                say(to_translate, this);
 	    }
             this.bot.chat(message);
         }

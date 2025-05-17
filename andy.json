@@ -29,5 +29,11 @@
             "stream": false,
             "enable_thinking": false
         }
+    },
+    
+    "tts": {
+        "engine": "bytedance",
+        "voice": "zh_female_linjianvhai_moon_bigtts",
+        "emotion": "neutral"
     }
 }

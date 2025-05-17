@@ -13,6 +13,12 @@
         "api": "doubao",
         "url": "https://ark.cn-beijing.volces.com/api/v3",
         "model": "doubao-embedding-text-240715"
+    },
+    
+    "tts": {
+        "engine": "bytedance",
+        "voice": "zh_male_yuanboxiaoshu_moon_bigtts",
+        "emotion": "neutral"
     }
 
 }

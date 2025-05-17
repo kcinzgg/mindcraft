@@ -3,6 +3,7 @@ import * as world from './library/world.js';
 import * as mc from '../utils/mcdata.js';
 import settings from '../../settings.js'
 import convoManager from './conversation.js';
+// import { say as speakText } from './speak.js';
 
 async function say(agent, message) {
     agent.bot.modes.behavior_log += message + '\n';
