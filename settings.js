@@ -2,7 +2,7 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-30 16:59:55
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-05-14 17:38:58
+ * @LastEditTime: 2025-05-17 19:09:50
  * @FilePath: /mindcraft/settings.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -57,7 +57,7 @@ const settings = {
     "only_chat_with": [], // users that the bots listen to and send general messages to. if empty it will chat publicly
     "speak": true, // allows all bots to speak through system text-to-speech. works on windows, mac, on linux you need to `apt install espeak`
     "language": "en", // translate to/from this language. Supports these language names: https://cloud.google.com/translate/docs/languages
-    "show_bot_views": false, // show bot's view in browser at localhost:3000, 3001...
+    "show_bot_views": true, // show bot's view in browser at localhost:3000, 3001...
 
     "allow_insecure_coding": true, // allows newAction command and model can write/run code on your computer. enable at own risk
     "allow_vision": false, // allows vision model to interpret screenshots as inputs

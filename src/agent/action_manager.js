@@ -59,7 +59,7 @@ export class ActionManager {
     async _executeAction(actionLabel, actionFn, timeout = 10) {
         let TIMEOUT;
         try {
-            console.log('executing code...\n');
+            console.log(`executing code "${actionLabel}"...\n`);
 
             // await current action to finish (executing=false), with 10 seconds timeout
             // also tell agent.bot to stop various actions
