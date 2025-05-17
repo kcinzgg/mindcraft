@@ -17,7 +17,7 @@
     
     "tts": {
         "engine": "bytedance",
-        "voice": "zh_male_yuanboxiaoshu_moon_bigtts",
+        "voice": "zh_male_jieshuoxiaoming_moon_bigtts",
         "emotion": "neutral"
     }
 

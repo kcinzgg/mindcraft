@@ -48,7 +48,7 @@ const settings = {
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json
     "profiles": [
         "./andy.json",
-        // "./jack.json",
+        "./jack.json",
         // "./profiles/gpt.json",
         // "./profiles/claude.json",
         // "./profiles/gemini.json",

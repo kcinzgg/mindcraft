@@ -144,11 +144,16 @@ export class Qwen {
                     const delay = Math.pow(2, retries) * 1000 + Math.floor(Math.random() * 2000);
                     // console.log(`Rate limit hit, retrying in ${delay} ms...`);
                     await new Promise(resolve => setTimeout(resolve, delay)); // Wait for the delay before retrying
+                } else if (err.status === 400) {
+                    console.error('千问embedding API请求参数错误，请检查请求参数:', err);
+                    console.error('text长度:', text.length);
+                    console.error('text:', text);
+                    throw new Error('千问embedding API请求参数错误，请检查请求参数');
                 } else if (err.code === 'Arrearage' || (err.error && err.error.code === 'Arrearage') || 
                           err.message.includes('Access denied') || err.message.includes('account is in good standing')) {
                     // 处理账户欠费或状态异常
-                    console.error('千问API账户状态异常:', err);
-                    throw new Error('千问API账户出现欠费或状态异常，请检查阿里云账户');
+                    console.error('千问embedding API账户状态异常:', err);
+                    throw new Error('千问embedding API账户出现欠费或状态异常，请检查阿里云账户');
                 } else {
                     throw err;
                 }
