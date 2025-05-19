@@ -63,7 +63,7 @@ const settings = {
         // using more than 1 profile requires you to /msg each bot indivually
         // individual profiles override values from the base profile
     ],
-    "load_memory": false, // load memory from previous session
+    "load_memory": true, // load memory from previous session
     // "init_message": "Respond with hello world and your name in chinese and always use chinese", // sends to all on spawn
     "init_message": "用中文打招呼，并始终用中文进行回复", // sends to all on spawn
     "only_chat_with": [], // users that the bots listen to and send general messages to. if empty it will chat publicly

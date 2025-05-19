@@ -328,12 +328,12 @@ export class ASRService {
                         modifierKey = down["LEFT META"] || down["RIGHT META"];
                     } else {
                         // Windows/Linux下使用Ctrl键
-                        modifierKey = down["LEFT CTRL"] || down["RIGHT CTRL"];
+                        modifierKey = down["LEFT ALT"] || down["RIGHT ALT"];
                     }
                     
                     // 当按下 I 键并同时按下修饰键 (MacOS用Command+I, 其他系统用Ctrl+I)
                     if (e.name === "I" && modifierKey) {
-                        const modifierName = isMac ? 'Command' : 'Ctrl';
+                        const modifierName = isMac ? 'Command' : 'Alt';
                         // console.log(`检测到${modifierName}+I ${e.state === "DOWN" ? "按下" : "释放"}`);
                         
                         // 按下按键时开始录音
@@ -355,7 +355,7 @@ export class ASRService {
                     return false;
                 });
                 
-                const modifierKey = isMac ? 'Command' : 'Ctrl';
+                const modifierKey = isMac ? 'Command' : 'Alt';
                 console.log(`已启用全局热键监听，按住 ${modifierKey}+I 录音，松开停止录音`);
             } catch (error) {
                 console.error("全局热键监听初始化失败:", error.message);
