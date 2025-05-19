@@ -70,7 +70,11 @@ export class Agent {
             
             // Set skin for profile, requires Fabric Tailor. (https://modrinth.com/mod/fabrictailor)
             if (this.prompter.profile.skin)
-                this.bot.chat(`/skin set URL ${this.prompter.profile.skin.model} ${this.prompter.profile.skin.path}`);
+                if (this.prompter.profile.skin.name) {
+                    this.bot.chat(`/skin url ${this.prompter.profile.skin.name}`);
+                } else {
+                    this.bot.chat(`/skin set URL ${this.prompter.profile.skin.model} ${this.prompter.profile.skin.path}`);
+                }
             else
                 this.bot.chat(`/skin clear`);
         });

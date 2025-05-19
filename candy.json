@@ -1,12 +1,12 @@
 {
-    "name": "andy",
+    "name": "candy",
 
     "cooldown": 5000,
 
     "model": {
-        "api": "qwen",
-        "url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "model": "qwen3-235b-a22b",
+        "api": "doubao",
+        "url": "https://ark.cn-beijing.volces.com/api/v3",
+        "model": "doubao-1-5-pro-32k-character-250228",
 
         "params": {
             "stream": false,

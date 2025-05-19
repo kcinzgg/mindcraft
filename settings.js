@@ -2,14 +2,15 @@
  * @Author: nick nickzj@qq.com
  * @Date: 2025-04-30 16:59:55
  * @LastEditors: nick nickzj@qq.com
- * @LastEditTime: 2025-05-17 21:19:04
+ * @LastEditTime: 2025-05-19 23:55:51
  * @FilePath: /mindcraft/settings.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 const settings = {
     "minecraft_version": "1.20.4", // supports up to 1.21.1
     "host": "127.0.0.1", // or "localhost", "your.ip.address.here"
-    "port": 55916,
+    // "port": 55916,
+    "port": 25565, // 本地paper服务器端口
     "auth": "offline", // or "microsoft"
 
     // the mindserver manages all agents and hosts the UI
@@ -47,8 +48,9 @@ const settings = {
     // the base profile is shared by all bots for default prompts/examples/modes
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json
     "profiles": [
-        "./andy.json",
-        "./jack.json",
+        // "./andy.json",
+        "./candy.json",
+        // "./jack.json",
         // "./profiles/gpt.json",
         // "./profiles/claude.json",
         // "./profiles/gemini.json",
