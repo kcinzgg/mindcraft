@@ -22,6 +22,7 @@
         "node-global-key-listener": "^0.1.1",
         "openai": "^4.78.1",
         "patch-package": "^8.0.0",
+        "play-sound": "^1.1.6",
         "prismarine-item": "^1.15.0",
         "prismarine-viewer": "^1.32.0",
         "replicate": "^0.29.4",
