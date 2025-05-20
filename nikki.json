@@ -1,5 +1,5 @@
 {
-    "name": "jack",
+    "name": "nikki",
 
     "cooldown": 5000,
 
@@ -19,13 +19,13 @@
     
     "tts": {
         "engine": "bytedance",
-        "voice": "zh_male_jingqiangkanye_moon_bigtts",
+        "voice": "zh_female_wanwanxiaohe_moon_bigtts",
         "emotion": "neutral"
     },
 
     "skin": {
         "model": "default",
         "path": "http://localhost:8081/skins/andy.png",
-        "name": "https://minesk.in/9b540f0e08de4d86ad4de5325ca59e61"
+        "name": "https://minesk.in/4aec428967004679ae747ae181860740"
     }
 }
