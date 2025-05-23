@@ -8,9 +8,16 @@
  */
 const settings = {
     "minecraft_version": "1.20.4", // supports up to 1.21.1
-    "host": "127.0.0.1", // or "localhost", "your.ip.address.here"
-    // "port": 55916,
-    "port": 25565, // 本地paper服务器端口
+
+    "host": "159.75.236.102",
+    "port": 25565,
+
+    // "host": "10.0.6.41", // or "localhost", "your.ip.address.here"
+    // "port": 6666, // 欧阳服务器端口
+
+    // "host": "127.0.0.1",
+    // "port": 25565, // 本地paper服务器端口
+
     "auth": "offline", // or "microsoft"
 
     // the mindserver manages all agents and hosts the UI
@@ -48,10 +55,10 @@ const settings = {
     // the base profile is shared by all bots for default prompts/examples/modes
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json
     "profiles": [
-        // "./andy.json",
-        // "./candy.json",
+        "./andy.json",
+        "./candy.json",
         // "./jack.json",
-        "./nikki.json",
+        // "./nikki.json",
         // "./profiles/gpt.json",
         // "./profiles/claude.json",
         // "./profiles/gemini.json",

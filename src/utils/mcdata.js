@@ -63,6 +63,16 @@ export function initBot(username) {
 
         version: mc_version,
     });
+    
+    // 添加连接错误处理
+    bot.on('error', (err) => {
+        if (err.code === 'ECONNRESET' || err.code === 'ECONNREFUSED') {
+            console.log(`${username}: 连接被重置，这在多agent场景下是正常的网络问题`);
+        } else {
+            console.error(`${username}: 连接错误:`, err);
+        }
+    });
+    
     bot.loadPlugin(pathfinder);
     bot.loadPlugin(pvp);
     bot.loadPlugin(collectblock);

@@ -19,7 +19,7 @@
     
     "tts": {
         "engine": "bytedance",
-        "voice": "zh_female_wanwanxiaohe_moon_bigtts",
+        "voice": "zh_female_gaolengyujie_moon_bigtts",
         "emotion": "neutral"
     },
 

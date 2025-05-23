@@ -73,7 +73,7 @@ async function main() {
         const agent_json = JSON.parse(profile);
         mainProxy.registerAgent(agent_json.name, agent_process);
         agent_process.start(profiles[i], load_memory, init_message, i, args.task_path, args.task_id);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
     }
 }
 

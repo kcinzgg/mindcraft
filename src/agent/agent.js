@@ -33,51 +33,128 @@ export class Agent {
         console.log('Initializing prompter...');
         this.prompter = new Prompter(this, profile_fp);
         this.name = this.prompter.getName();
-        console.log('Initializing history...');
+        console.log(this.name, ': initializing history...');
         this.history = new History(this);
-        console.log('Initializing coder...');
+        console.log(this.name, ': initializing coder...');
         this.coder = new Coder(this);
-        console.log('Initializing npc controller...');
+        console.log(this.name, ': initializing npc controller...');
         this.npc = new NPCContoller(this);
-        console.log('Initializing memory bank...');
+        console.log(this.name, ': initializing memory bank...');
         this.memory_bank = new MemoryBank();
-        console.log('Initializing self prompter...');
+        console.log(this.name, ': initializing self prompter...');
         this.self_prompter = new SelfPrompter(this);
         convoManager.initAgent(this);            
-        console.log('Initializing examples...');
+        console.log(this.name, ': initializing examples...');
         await this.prompter.initExamples();
-        console.log('Initializing task...');
+        console.log(this.name, ': initializing task...');
         this.task = new Task(this, task_path, task_id);
         const blocked_actions = settings.blocked_actions.concat(this.task.blocked_actions || []);
         blacklistCommands(blocked_actions);
 
         serverProxy.connect(this);
 
-        console.log(this.name, 'logging into minecraft...');
-        this.bot = initBot(this.name);
+        // 为多agent场景添加连接延迟，避免同时连接冲突
+        const isLocalServer = settings.host === 'localhost' || settings.host === '127.0.0.1' || settings.host.startsWith('192.168.');
+        const baseDelay = isLocalServer ? 500 : 2000; // 本地服务器延迟0.5秒，远程服务器延迟2秒
+        const connectionDelay = this.count_id * baseDelay;
+        if (connectionDelay > 0) {
+            console.log(this.name, `等待${connectionDelay/1000}秒后连接minecraft...${isLocalServer ? '(本地服务器)' : '(远程服务器)'}`);
+            await new Promise(resolve => setTimeout(resolve, connectionDelay));
+        }
 
+        console.log(this.name, ': logging into minecraft...');
+        
+        // 连接重试机制
+        let connectionAttempts = 0;
+        const maxAttempts = 3;
+        
+        const tryConnect = async () => {
+            try {
+                this.bot = initBot(this.name);
+                return new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('连接超时'));
+                    }, 10000);
+                    
+                    this.bot.once('login', () => {
+                        clearTimeout(timeout);
+
+                        console.log(this.name, 'logged in!');
+
+                        serverProxy.login();
+
+                        // Set skin for profile, requires Fabric Tailor. (https://modrinth.com/mod/fabrictailor)
+                        if (this.prompter.profile.skin)
+                            if (this.prompter.profile.skin.name) {
+                                this.bot.chat(`/skin url ${this.prompter.profile.skin.name}`);
+                            } else {
+                                this.bot.chat(`/skin set URL ${this.prompter.profile.skin.model} ${this.prompter.profile.skin.path}`);
+                            }
+                        else
+                            this.bot.chat(`/skin clear`);
+
+                        resolve();
+                    });
+                    
+                    this.bot.once('error', (err) => {
+                        clearTimeout(timeout);
+                        reject(err);
+                    });
+                });
+            } catch (error) {
+                throw error;
+            }
+        };
+        
+        while (connectionAttempts < maxAttempts) {
+            try {
+                await tryConnect();
+                break; // 连接成功，跳出循环
+            } catch (error) {
+                connectionAttempts++;
+                if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
+                    if (connectionAttempts < maxAttempts) {
+                        const retryDelay = connectionAttempts * 3000;
+                        console.log(`${this.name}: 连接失败，${retryDelay/1000}秒后进行第${connectionAttempts + 1}次重试...`);
+                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    } else {
+                        console.error(`${this.name}: 连接失败，已达到最大重试次数`);
+                        throw error;
+                    }
+                } else {
+                    throw error; // 其他错误直接抛出
+                }
+            }
+        }
+        
+        if (!this.bot) {
+            this.bot = initBot(this.name); // 作为备用方案
+        }
+
+        console.log(this.name, ': initModes...');
         initModes(this);
 
+        console.log(this.name, ': load_mem...');
         let save_data = null;
         if (load_mem) {
             save_data = this.history.load();
         }
 
-        this.bot.on('login', () => {
-            console.log(this.name, 'logged in!');
+        // this.bot.on('login', () => {
+        //     console.log(this.name, 'logged in!');
 
-            serverProxy.login();
+        //     serverProxy.login();
             
-            // Set skin for profile, requires Fabric Tailor. (https://modrinth.com/mod/fabrictailor)
-            if (this.prompter.profile.skin)
-                if (this.prompter.profile.skin.name) {
-                    this.bot.chat(`/skin url ${this.prompter.profile.skin.name}`);
-                } else {
-                    this.bot.chat(`/skin set URL ${this.prompter.profile.skin.model} ${this.prompter.profile.skin.path}`);
-                }
-            else
-                this.bot.chat(`/skin clear`);
-        });
+        //     // Set skin for profile, requires Fabric Tailor. (https://modrinth.com/mod/fabrictailor)
+        //     if (this.prompter.profile.skin)
+        //         if (this.prompter.profile.skin.name) {
+        //             this.bot.chat(`/skin url ${this.prompter.profile.skin.name}`);
+        //         } else {
+        //             this.bot.chat(`/skin set URL ${this.prompter.profile.skin.model} ${this.prompter.profile.skin.path}`);
+        //         }
+        //     else
+        //         this.bot.chat(`/skin clear`);
+        // });
 
         const spawnTimeout = setTimeout(() => {
             process.exit(0);
@@ -145,7 +222,7 @@ export class Agent {
 		this.respondFunc = respondFunc
 
         this.bot.on('whisper', respondFunc);
-        if (settings.profiles.length === 1 || true)
+        if (settings.profiles.length === 1)
             this.bot.on('chat', respondFunc);
 
         // Set up auto-eat

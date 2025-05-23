@@ -67,7 +67,7 @@ const initStats = () => {
   try {
     return JSON.parse(fs.readFileSync(STATS_FILE, 'utf8'));
   } catch (e) {
-    console.error('Error loading token stats:', e);
+    // console.error('Error loading token stats:', e);
     return {
       totalTokens: { prompt: 0, completion: 0, total: 0 },
       modelStats: {},
@@ -181,7 +181,7 @@ export const recordTokenUsage = (modelName, promptTokens, completionTokens, api,
   stats.lastUpdated = getBeijingTime();
   
   // 记录到控制台（方便调试）
-  console.log(`[Token Stats] ${api}/${modelName}: ${promptTokens} prompt + ${completionTokens} completion = ${promptTokens + completionTokens} tokens`);
+  // console.log(`[Token Stats] ${api}/${modelName}: ${promptTokens} prompt + ${completionTokens} completion = ${promptTokens + completionTokens} tokens`);
   
   // 同时记录详细日志（如果提供了agent信息）
   if (agentName) {
