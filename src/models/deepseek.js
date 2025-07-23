@@ -40,13 +40,8 @@ export class DeepSeek {
         try {
             console.log('Awaiting deepseek api response...')
             // console.log('Messages:', messages);
+            const startTime = new Date().getTime();
             let completion = await this.openai.chat.completions.create(pack);
-            
-            // 获取用户消息和系统消息
-            let userMessage = '';
-            if (turns.length > 0 && turns[turns.length - 1].role === 'user') {
-                userMessage = turns[turns.length - 1].content;
-            }
             
             // 记录token使用情况
             if (completion.usage) {
@@ -56,15 +51,25 @@ export class DeepSeek {
                     completion.usage.completion_tokens,
                     'deepseek',
                     agentName,
-                    userMessage,
-                    systemMessage,
+                    messages,
                     toolsNum,
-                    completion.choices[0].message.content
+                    {
+                        choices: completion.choices,
+                        model: completion.model,
+                        id: completion.id,
+                        created: completion.created,
+                        finish_reason: completion.choices[0]?.finish_reason,
+                        message: completion.choices[0]?.message
+                    },
+                    {
+                        request_params: pack,
+                        response_time_ms: new Date().getTime() - startTime,
+                        api_endpoint: this.openai.baseURL
+                    }
                 );
             } else {
                 // 如果API未返回token使用信息，使用估算器
-                const promptText = systemMessage + JSON.stringify(messages);
-                const promptTokens = estimateTokenCount(promptText);
+                const promptTokens = estimateTokenCount(JSON.stringify(messages));
                 const completionTokens = estimateTokenCount(completion.choices[0].message.content);
                 
                 recordTokenUsage(
@@ -73,10 +78,23 @@ export class DeepSeek {
                     completionTokens,
                     'deepseek',
                     agentName,
-                    userMessage,
-                    systemMessage,
+                    messages,
                     toolsNum,
-                    completion.choices[0].message.content
+                    {
+                        choices: completion.choices,
+                        model: completion.model,
+                        id: completion.id,
+                        created: completion.created,
+                        finish_reason: completion.choices[0]?.finish_reason,
+                        message: completion.choices[0]?.message,
+                        estimated_tokens: true
+                    },
+                    {
+                        request_params: pack,
+                        response_time_ms: new Date().getTime() - startTime,
+                        api_endpoint: this.openai.baseURL,
+                        note: "Token usage estimated"
+                    }
                 );
             }
             

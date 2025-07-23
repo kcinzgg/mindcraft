@@ -31,13 +31,8 @@ export class Doubao {
         try {
             console.log('Awaiting Doubao api response...');
             // console.log('Messages:', messages);
+            const startTime = new Date().getTime();
             let completion = await this.openai.chat.completions.create(pack);
-            
-            // 获取用户消息和系统消息
-            let userMessage = '';
-            if (turns.length > 0 && turns[turns.length - 1].role === 'user') {
-                userMessage = turns[turns.length - 1].content;
-            }
             
             // 记录token使用情况
             if (completion.usage) {
@@ -47,15 +42,25 @@ export class Doubao {
                     completion.usage.completion_tokens,
                     'Doubao',
                     agentName,
-                    userMessage,
-                    systemMessage,
+                    messages, // 传入完整的messages数组
                     toolsNum,
-                    completion.choices[0].message.content
+                    { // 传入完整的completion响应信息
+                        choices: completion.choices,
+                        model: completion.model,
+                        id: completion.id,
+                        created: completion.created,
+                        finish_reason: completion.choices[0]?.finish_reason,
+                        message: completion.choices[0]?.message
+                    },
+                    { // 元数据
+                        request_params: pack,
+                        response_time_ms: new Date().getTime() - startTime,
+                        api_endpoint: this.openai.baseURL
+                    }
                 );
             } else {
                 // 如果API未返回token使用信息，使用估算器
-                const promptText = systemMessage + JSON.stringify(messages);
-                const promptTokens = estimateTokenCount(promptText);
+                const promptTokens = estimateTokenCount(JSON.stringify(messages));
                 const completionTokens = estimateTokenCount(completion.choices[0].message.content);
                 
                 recordTokenUsage(
@@ -64,10 +69,23 @@ export class Doubao {
                     completionTokens,
                     'Doubao',
                     agentName,
-                    userMessage,
-                    systemMessage,
+                    messages, // 传入完整的messages数组
                     toolsNum,
-                    completion.choices[0].message.content
+                    { // 传入完整的completion响应信息
+                        choices: completion.choices,
+                        model: completion.model,
+                        id: completion.id,
+                        created: completion.created,
+                        finish_reason: completion.choices[0]?.finish_reason,
+                        message: completion.choices[0]?.message,
+                        estimated_tokens: true
+                    },
+                    { // 元数据
+                        request_params: pack,
+                        response_time_ms: new Date().getTime() - startTime,
+                        api_endpoint: this.openai.baseURL,
+                        note: "Token usage estimated"
+                    }
                 );
             }
             
@@ -106,33 +124,30 @@ export class Doubao {
                     encoding_format: "float",
                 });
                 
-                // 记录embedding的token使用量（如果API返回）
-                if (data[0].usage) {
-                    recordTokenUsage(
-                        this.model_name || "text-embedding-v3",
-                        data[0].usage.prompt_tokens || estimateTokenCount(text),
-                        0, // embedding通常没有completion tokens
-                        'Doubao',
-                        agentName,
-                        text.substring(0, 100) + (text.length > 100 ? '...' : ''), // 截断过长的文本
-                        'embedding', 
-                        0,
-                        '' // embedding没有LLM响应内容
-                    );
-                } else {
-                    // 估算embedding的token使用量
-                    recordTokenUsage(
-                        this.model_name || "text-embedding-v3",
-                        estimateTokenCount(text),
-                        0,
-                        'Doubao',
-                        agentName,
-                        text.substring(0, 100) + (text.length > 100 ? '...' : ''),
-                        'embedding',
-                        0,
-                        '' // embedding没有LLM响应内容
-                    );
-                }
+                // 记录embedding的token使用量
+                const promptTokens = data.usage?.prompt_tokens || estimateTokenCount(text);
+                const inputText = text.substring(0, 100) + (text.length > 100 ? '...' : '');
+                
+                recordTokenUsage(
+                    this.model_name || "text-embedding-v3",
+                    promptTokens,
+                    0, // embedding通常没有completion tokens
+                    'Doubao',
+                    agentName,
+                    [{ role: 'user', content: inputText }], // 格式化为消息格式
+                    0,
+                    { // embedding响应信息
+                        data: data.data?.length || 0,
+                        model: data.model,
+                        embedding_dimensions: data.data?.[0]?.embedding?.length || 0,
+                        encoding_format: "float"
+                    },
+                    { // 元数据
+                        operation: 'embedding',
+                        original_text_length: text.length,
+                        api_endpoint: this.openai.baseURL
+                    }
+                );
                 
                 return data[0].embedding;
             } catch (err) {

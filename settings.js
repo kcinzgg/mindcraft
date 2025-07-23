@@ -9,14 +9,14 @@
 const settings = {
     "minecraft_version": "1.20.4", // supports up to 1.21.1
 
-    "host": "159.75.236.102",
-    "port": 25565,
+    // "host": "159.75.236.102",
+    // "port": 25565,
 
-    // "host": "10.0.6.41", // or "localhost", "your.ip.address.here"
+    // "host": "10.0.6.236", // or "localhost", "your.ip.address.here"
     // "port": 6666, // 欧阳服务器端口
 
-    // "host": "127.0.0.1",
-    // "port": 25565, // 本地paper服务器端口
+    "host": "127.0.0.1",
+    "port": 55916, // 本地paper服务器端口
 
     "auth": "offline", // or "microsoft"
 
@@ -56,7 +56,7 @@ const settings = {
     "base_profile": "./profiles/defaults/survival.json", // also see creative.json, god_mode.json
     "profiles": [
         "./andy.json",
-        "./candy.json",
+        // "./candy.json",
         // "./jack.json",
         // "./nikki.json",
         // "./profiles/gpt.json",
@@ -75,7 +75,7 @@ const settings = {
     // "init_message": "Respond with hello world and your name in chinese and always use chinese", // sends to all on spawn
     "init_message": "用中文打招呼，并始终用中文进行回复", // sends to all on spawn
     "only_chat_with": [], // users that the bots listen to and send general messages to. if empty it will chat publicly
-    "speak": true, // allows all bots to speak through system text-to-speech. works on windows, mac, on linux you need to `apt install espeak`
+    "speak": false, // allows all bots to speak through system text-to-speech. works on windows, mac, on linux you need to `apt install espeak`
     "language": "en", // translate to/from this language. Supports these language names: https://cloud.tencent.com/translate/docs/languages
     "show_bot_views": true, // show bot's view in browser at localhost:3000, 3001...
 

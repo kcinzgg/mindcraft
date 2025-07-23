@@ -79,7 +79,7 @@ const initStats = () => {
 };
 
 // 记录详细token使用日志到CSV文件
-export const recordTokenDetail = (agentName, userMessage, systemMessage, toolsNum, promptTokens, completionTokens, llmResponse = '') => {
+export const recordTokenDetail = (agentName, inputMessages, toolsNum, promptTokens, completionTokens, completionResponse = {}, metadata = {}) => {
   ensureLogDir();
   
   const uuid = uuidv4();
@@ -98,32 +98,56 @@ export const recordTokenDetail = (agentName, userMessage, systemMessage, toolsNu
     return stringField;
   };
   
-  // 清理消息内容，去除不必要的空白和换行
-  const cleanMessage = (message) => {
-    if (!message) return '';
-    return message.replace(/\s+/g, ' ').trim();
+  // 清理和格式化消息内容
+  const cleanAndFormat = (data) => {
+    if (!data) return '';
+    const jsonStr = typeof data === 'string' ? data : JSON.stringify(data);
+    return jsonStr.replace(/\s+/g, ' ').trim();
   };
   
-  const userMsg = cleanMessage(userMessage);
-  const sysMsg = cleanMessage(systemMessage);
-  const llmResp = cleanMessage(llmResponse);
+  // 提取completion响应的关键信息
+  const extractCompletionInfo = (completion) => {
+    if (!completion || typeof completion !== 'object') return '';
+    
+    const info = {
+      content: completion.message?.content || completion.content || '',
+      finish_reason: completion.finish_reason || '',
+      model: completion.model || metadata.model || '',
+      choices_count: completion.choices ? completion.choices.length : (completion.content ? 1 : 0)
+    };
+    
+    // 如果有完整的choices数组，记录更多信息
+    if (completion.choices && completion.choices.length > 0) {
+      info.all_choices = completion.choices.map(choice => ({
+        content: choice.message?.content || choice.content || '',
+        finish_reason: choice.finish_reason || '',
+        index: choice.index || 0
+      }));
+    }
+    
+    return JSON.stringify(info);
+  };
+  
+  const inputMessagesStr = cleanAndFormat(inputMessages);
+  const completionInfoStr = extractCompletionInfo(completionResponse);
+  const metadataStr = cleanAndFormat(metadata);
   
   const csvLine = [
     escapeCsvField(uuid),
     escapeCsvField(time),
     escapeCsvField(agentName),
-    escapeCsvField(userMsg),
-    escapeCsvField(sysMsg),
+    escapeCsvField(inputMessagesStr),
     escapeCsvField(toolsNum),
     escapeCsvField(promptTokens),
     escapeCsvField(completionTokens),
     escapeCsvField(totalTokens),
-    escapeCsvField(llmResp)
+    escapeCsvField(completionInfoStr),
+    escapeCsvField(metadataStr)
   ].join(',') + '\n';
   
   // 检查文件是否存在，不存在则创建并添加表头
   if (!fs.existsSync(TOKEN_DETAIL_LOG)) {
-    const header = 'uuid,time,agent_name,user_message,system_message,tools_num,prompt_tokens,completion_tokens,total_tokens,llm_response\n';
+    const header = 'uuid,time,agent_name,input_messages,tools_num,prompt_tokens,completion_tokens,total_tokens,completion_response,metadata\n';
     fs.writeFileSync(TOKEN_DETAIL_LOG, header);
   }
   
@@ -136,7 +160,7 @@ export const recordTokenDetail = (agentName, userMessage, systemMessage, toolsNu
 };
 
 // 更新recordTokenUsage函数以同时记录详细日志
-export const recordTokenUsage = (modelName, promptTokens, completionTokens, api, agentName = '', userMessage = '', systemMessage = '', toolsNum = 0, llmResponse = '') => {
+export const recordTokenUsage = (modelName, promptTokens, completionTokens, api, agentName = '', inputMessages = '', toolsNum = 0, completionResponse = {}, metadata = {}) => {
   let stats = initStats();
   const today = getBeijingDate();
   
@@ -185,7 +209,14 @@ export const recordTokenUsage = (modelName, promptTokens, completionTokens, api,
   
   // 同时记录详细日志（如果提供了agent信息）
   if (agentName) {
-    recordTokenDetail(agentName, userMessage, systemMessage, toolsNum, promptTokens, completionTokens, llmResponse);
+    // 添加额外的元数据
+    const enrichedMetadata = {
+      ...metadata,
+      model: modelName,
+      api: api,
+      timestamp: getBeijingTime()
+    };
+    recordTokenDetail(agentName, inputMessages, toolsNum, promptTokens, completionTokens, completionResponse, enrichedMetadata);
   }
   
   // 保存统计数据
